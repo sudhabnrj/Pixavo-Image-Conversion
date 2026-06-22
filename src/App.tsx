@@ -31,6 +31,12 @@ import { FileCard } from './components/FileCard';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { FAQ } from './components/FAQ';
+import {
+  disposeImageCollection,
+  disposeImageResources,
+  releaseCanvas,
+  revokeObjectUrl,
+} from './utils/memory';
 import type { ImageFile, ConversionSettings, CameraMetadata } from './types';
 
 const rawDecoder = new LibRaw();
@@ -56,6 +62,7 @@ const benefits = [
 function App() {
   const [files, setFiles] = useState<ImageFile[]>([]);
   const filesRef = useRef<ImageFile[]>([]);
+  const isMountedRef = useRef(true);
   const [settings, setSettings] = useState<ConversionSettings>({
     quality: 0.9,
     resizeMode: 'original',
@@ -68,17 +75,15 @@ function App() {
     filesRef.current = files;
   }, [files]);
 
-  // Clean up object URLs on unmount.
+  // Release every object URL still owned by the queue on unmount.
   useEffect(() => {
+    // React Strict Mode runs an extra setup/cleanup cycle in development.
+    // Restore the mounted state during each setup so async uploads are retained.
+    isMountedRef.current = true;
+
     return () => {
-      filesRef.current.forEach(file => {
-        if (file.previewUrl && file.previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(file.previewUrl);
-        }
-        if (file.resultUrl) {
-          URL.revokeObjectURL(file.resultUrl);
-        }
-      });
+      isMountedRef.current = false;
+      disposeImageCollection(filesRef.current);
     };
   }, []);
 
@@ -170,33 +175,24 @@ function App() {
       });
     }
 
+    if (!isMountedRef.current) {
+      disposeImageCollection(newQueueItems);
+      return;
+    }
+
     setFiles(prev => [...prev, ...newQueueItems]);
   };
 
   // Remove individual file from list
   const handleRemoveFile = (id: string) => {
     const target = files.find(f => f.id === id);
-    if (target) {
-      if (target.previewUrl && target.previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(target.previewUrl);
-      }
-      if (target.resultUrl) {
-        URL.revokeObjectURL(target.resultUrl);
-      }
-    }
+    if (target) disposeImageResources(target);
     setFiles(prev => prev.filter(f => f.id !== id));
   };
 
   // Clear all files
   const handleClearAll = () => {
-    files.forEach(file => {
-      if (file.previewUrl && file.previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(file.previewUrl);
-      }
-      if (file.resultUrl) {
-        URL.revokeObjectURL(file.resultUrl);
-      }
-    });
+    disposeImageCollection(files);
     setFiles([]);
   };
 
@@ -251,11 +247,15 @@ function App() {
         decodedRawCanvas.height = decoded.height;
         const rawContext = decodedRawCanvas.getContext('2d');
         if (!rawContext) {
+          releaseCanvas(decodedRawCanvas);
+          decodedRawCanvas = undefined;
           throw new Error('Failed to create a canvas for the decoded RAW image.');
         }
         rawContext.putImageData(new ImageData(rgba, decoded.width, decoded.height), 0, 0);
         updateProgress(55);
       } catch (rawError) {
+        releaseCanvas(decodedRawCanvas);
+        decodedRawCanvas = undefined;
         console.warn('Full RAW decoding failed, trying the embedded thumbnail:', rawError);
         const thumbnail = await exifr.thumbnail(item.file);
         if (!thumbnail) {
@@ -285,15 +285,39 @@ function App() {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = sourceBlob ? URL.createObjectURL(sourceBlob) : '';
+      let isSettled = false;
+      let isSourceUrlReleased = false;
+
+      const releaseSourceUrl = () => {
+        if (isSourceUrlReleased) return;
+        isSourceUrlReleased = true;
+        revokeObjectUrl(url);
+      };
+
+      const releaseTemporaryResources = () => {
+        releaseSourceUrl();
+        img.onload = null;
+        img.onerror = null;
+        img.src = '';
+        releaseCanvas(decodedRawCanvas);
+        decodedRawCanvas = undefined;
+      };
+
+      const rejectOnce = (error: Error) => {
+        if (isSettled) return;
+        isSettled = true;
+        releaseTemporaryResources();
+        reject(error);
+      };
 
       const renderImage = (source: CanvasImageSource, sourceWidth: number, sourceHeight: number) => {
-        if (url) URL.revokeObjectURL(url);
         updateProgress(70);
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          reject(new Error('Failed to retrieve canvas context.'));
+          releaseCanvas(canvas);
+          rejectOnce(new Error('Failed to retrieve canvas context.'));
           return;
         }
 
@@ -326,33 +350,44 @@ function App() {
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         
-        // Render image onto canvas
-        ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
-        updateProgress(85);
+        try {
+          // Render image onto canvas
+          ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
+          updateProgress(85);
 
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error('Canvas compression returned empty output.'));
-              return;
-            }
-            updateProgress(100);
-            resolve({
-              blob,
-              width: targetWidth,
-              height: targetHeight
-            });
-          },
-          'image/jpeg',
-          currentSettings.quality
-        );
+          canvas.toBlob(
+            (blob) => {
+              releaseCanvas(canvas);
+              if (!blob) {
+                rejectOnce(new Error('Canvas compression returned empty output.'));
+                return;
+              }
+              if (isSettled) return;
+              isSettled = true;
+              updateProgress(100);
+              releaseTemporaryResources();
+              resolve({
+                blob,
+                width: targetWidth,
+                height: targetHeight
+              });
+            },
+            'image/jpeg',
+            currentSettings.quality
+          );
+        } catch (error) {
+          releaseCanvas(canvas);
+          rejectOnce(error instanceof Error ? error : new Error('Failed to render the image.'));
+        }
       };
 
-      img.onload = () => renderImage(img, img.width, img.height);
+      img.onload = () => {
+        releaseSourceUrl();
+        renderImage(img, img.width, img.height);
+      };
 
       img.onerror = () => {
-        if (url) URL.revokeObjectURL(url);
-        reject(new Error('Failed to load image buffer. The file format may be unsupported or corrupted.'));
+        rejectOnce(new Error('Failed to load image buffer. The file format may be unsupported or corrupted.'));
       };
 
       if (decodedRawCanvas) {
@@ -389,11 +424,13 @@ function App() {
           }
         );
 
+        if (!isMountedRef.current) return;
         const resultUrl = URL.createObjectURL(blob);
 
-        setFiles(prev => prev.map(f => 
-          f.id === item.id 
-            ? { 
+        setFiles(prev => prev.map(f => {
+          if (f.id !== item.id) return f;
+          revokeObjectUrl(f.resultUrl);
+          return {
                 ...f, 
                 status: 'success', 
                 progress: 100, 
@@ -402,9 +439,8 @@ function App() {
                 resultUrl,
                 width,
                 height
-              } 
-            : f
-        ));
+          };
+        }));
       } catch (err: unknown) {
         console.error('Error during image conversion:', err);
         const errorMessage = err instanceof Error ? err.message : 'Error occurred during processing.';
@@ -432,8 +468,11 @@ function App() {
     a.href = item.resultUrl;
     a.download = downloadName;
     document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      a.click();
+    } finally {
+      a.remove();
+    }
   };
 
   // Download all files (ZIP creation if multiple, otherwise individual)
@@ -458,14 +497,16 @@ function App() {
     try {
       const zipContent = await zip.generateAsync({ type: 'blob' });
       const zipUrl = URL.createObjectURL(zipContent);
-
       const a = document.createElement('a');
-      a.href = zipUrl;
-      a.download = `converted_images_${Date.now()}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(zipUrl);
+      try {
+        a.href = zipUrl;
+        a.download = `converted_images_${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+      } finally {
+        a.remove();
+        revokeObjectUrl(zipUrl);
+      }
     } catch (e) {
       console.error('ZIP packaging failed:', e);
       alert('Failed to generate ZIP file.');
