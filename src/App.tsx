@@ -11,15 +11,47 @@ import {
   Play, 
   AlertCircle,
   FileImage,
-  Layers
+  Layers,
+  LockKeyhole,
+  Gauge,
+  WifiOff,
+  MonitorCheck,
+  Images,
+  ShieldCheck,
+  Gem,
+  DownloadCloud,
+  Files,
+  ArrowRight,
+  Mail
 } from 'lucide-react';
 
 import { Dropzone } from './components/Dropzone';
 import { SettingsPanel } from './components/SettingsPanel';
 import { FileCard } from './components/FileCard';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { FAQ } from './components/FAQ';
 import type { ImageFile, ConversionSettings, CameraMetadata } from './types';
 
 const rawDecoder = new LibRaw();
+
+const features = [
+  { title: '100% Browser Based', description: 'Everything runs directly in your browser—no remote processing.', icon: MonitorCheck },
+  { title: 'Batch Conversion', description: 'Queue and convert multiple images in one streamlined workflow.', icon: Images },
+  { title: 'Privacy First', description: 'Your private photos stay on your device from start to finish.', icon: ShieldCheck },
+  { title: 'High Quality Output', description: 'Fine-tune JPEG quality and dimensions for polished results.', icon: Gem },
+  { title: 'No Installation', description: 'Open Pixavo and start converting without downloading software.', icon: DownloadCloud },
+  { title: 'Multiple RAW Formats', description: 'Work with popular RAW files from leading camera manufacturers.', icon: Files },
+];
+
+const formats = ['CR2', 'CR3', 'NEF', 'ARW', 'RW2', 'RAF', 'ORF', 'PEF', 'DNG', 'RAW'];
+
+const benefits = [
+  { title: 'No Upload Required', description: 'Skip slow transfers and keep every original file on your device.', icon: LockKeyhole },
+  { title: 'Faster Than Cloud Converters', description: 'Start processing immediately without waiting for uploads or downloads.', icon: Gauge },
+  { title: 'Works Offline', description: 'Once loaded, core conversion happens locally without a server round trip.', icon: WifiOff },
+  { title: 'Secure Local Processing', description: 'Browser-native processing keeps sensitive photography under your control.', icon: ShieldCheck },
+];
 
 function App() {
   const [files, setFiles] = useState<ImageFile[]>([]);
@@ -444,175 +476,255 @@ function App() {
   const pendingCount = files.filter(f => f.status === 'pending' || f.status === 'error').length;
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto flex flex-col justify-between">
-      {/* Main Content Area */}
-      <main className="flex-1 w-full space-y-8 pb-10">
-        
-        {/* Header Section */}
-        <header className="text-center space-y-4">
-          <div className="inline-flex items-center space-x-2.5 bg-brand-violet/10 border border-brand-violet/20 px-3.5 py-1.5 rounded-full text-xs font-semibold text-brand-violet tracking-wide">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Local Browser Image Processing</span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Raw to JPEG Converter
-          </h1>
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-zinc-400">
-            Convert proprietary RAW digital photos, HEIC, PNGs, and WebPs into optimized JPGs. Fully secure, client-side conversion means files never leave your computer.
-          </p>
-        </header>
+    <div className="min-h-screen">
+      <Header />
 
-        {/* Dynamic Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
-          {/* Left / Main Section: Dropzone & File queue list */}
-          <div className="lg:col-span-2 space-y-6">
-            <Dropzone onFilesAdded={handleFilesAdded} />
-
-            {/* Queue header & actions */}
-            {files.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center bg-zinc-900/20 border border-zinc-800/80 px-4 py-3 rounded-xl backdrop-blur-md">
-                  <div className="flex items-center space-x-2 text-xs sm:text-sm font-semibold text-zinc-300">
-                    <Layers className="w-4 h-4 text-zinc-400" />
-                    <span>Queue List ({files.length} {files.length === 1 ? 'file' : 'files'})</span>
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={handleClearAll}
-                      disabled={isProcessing}
-                      className="px-3 py-1.5 border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-850 hover:text-rose-400 text-zinc-400 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all duration-200 disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Clear All</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* File list cards */}
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                  {files.map(item => (
-                    <FileCard
-                      key={item.id}
-                      item={item}
-                      onRemove={handleRemoveFile}
-                      onDownload={handleDownloadFile}
-                    />
-                  ))}
-                </div>
+      <main>
+        <section
+          id="converter"
+          className="scroll-mt-24 px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:px-8"
+          aria-labelledby="converter-title"
+        >
+          <div className="mx-auto max-w-6xl space-y-8">
+            <div className="space-y-4 text-center">
+              <div className="inline-flex items-center space-x-2.5 rounded-full border border-brand-violet/20 bg-brand-violet/10 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-brand-violet">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Local Browser Image Processing</span>
               </div>
-            )}
-          </div>
+              <h1 id="converter-title" className="text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">
+                Raw to JPEG Converter
+              </h1>
+              <p className="mx-auto max-w-2xl text-sm text-zinc-400 sm:text-base">
+                Convert proprietary RAW digital photos, HEIC, PNGs, and WebPs into optimized JPGs. Fully secure, client-side conversion means files never leave your computer.
+              </p>
+            </div>
 
-          {/* Right Section: Settings & Summary actions */}
-          <div className="space-y-6">
-            <SettingsPanel settings={settings} onChange={setSettings} />
+            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+              <div className="space-y-6 lg:col-span-2">
+                <Dropzone onFilesAdded={handleFilesAdded} />
 
-            {/* Actions Dashboard */}
-            {files.length > 0 && (
-              <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 backdrop-blur-md space-y-4">
-                <h3 className="text-sm font-semibold text-zinc-300">Conversion Dashboard</h3>
-
-                {/* Progress bar */}
-                {isProcessing && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-brand-violet font-semibold">Converting Queue...</span>
-                      <span>{globalProgress}%</span>
+                {files.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between rounded-xl border border-zinc-800/80 bg-zinc-900/20 px-4 py-3 backdrop-blur-md">
+                      <div className="flex items-center space-x-2 text-xs font-semibold text-zinc-300 sm:text-sm">
+                        <Layers className="h-4 w-4 text-zinc-400" />
+                        <span>Queue List ({files.length} {files.length === 1 ? 'file' : 'files'})</span>
+                      </div>
+                      <button
+                        onClick={handleClearAll}
+                        disabled={isProcessing}
+                        className="flex items-center space-x-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-semibold text-zinc-400 transition-all duration-200 hover:bg-zinc-800 hover:text-rose-400 disabled:pointer-events-none disabled:opacity-30"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Clear All</span>
+                      </button>
                     </div>
-                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-brand-violet h-full rounded-full transition-all duration-300"
-                        style={{ width: `${globalProgress}%` }}
-                      />
+
+                    <div className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
+                      {files.map((item) => (
+                        <FileCard
+                          key={item.id}
+                          item={item}
+                          onRemove={handleRemoveFile}
+                          onDownload={handleDownloadFile}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
+              </div>
 
-                {/* Queue status metrics */}
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="bg-zinc-950/40 border border-zinc-850 p-3 rounded-xl">
-                    <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Converted</span>
-                    <span className="text-xl font-bold text-brand-emerald">{successCount}</span>
-                  </div>
-                  <div className="bg-zinc-950/40 border border-zinc-850 p-3 rounded-xl">
-                    <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Remaining</span>
-                    <span className="text-xl font-bold text-zinc-300">{pendingCount}</span>
-                  </div>
-                </div>
+              <div className="space-y-6">
+                <SettingsPanel settings={settings} onChange={setSettings} />
 
-                {/* Primary operations */}
-                <div className="flex flex-col gap-3 pt-2">
-                  {pendingCount > 0 && (
-                    <button
-                      onClick={handleStartConversion}
-                      disabled={isProcessing}
-                      className="w-full py-3 bg-brand-violet hover:bg-brand-violet/90 text-white rounded-xl font-semibold text-sm flex items-center justify-center space-x-2.5 shadow-md shadow-brand-violet/25 hover:shadow-brand-violet/30 hover:scale-[1.01] transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>{isProcessing ? 'Processing...' : `Convert ${pendingCount} ${pendingCount === 1 ? 'Image' : 'Images'}`}</span>
-                    </button>
-                  )}
+                {files.length > 0 && (
+                  <div className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-md">
+                    <h2 className="text-sm font-semibold text-zinc-300">Conversion Dashboard</h2>
+                    {isProcessing && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between font-mono text-xs">
+                          <span className="font-semibold text-brand-violet">Converting Queue...</span>
+                          <span>{globalProgress}%</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                          <div
+                            className="h-full rounded-full bg-brand-violet transition-all duration-300"
+                            style={{ width: `${globalProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                  {successCount > 0 && (
-                    <button
-                      onClick={handleDownloadAll}
-                      disabled={isProcessing}
-                      className="w-full py-3 bg-zinc-150 bg-zinc-200 text-zinc-900 rounded-xl font-bold text-sm flex items-center justify-center space-x-2.5 transition-all duration-200 hover:scale-[1.01]"
-                    >
-                      {successCount > 1 ? (
-                        <>
-                          <FolderArchive className="w-4 h-4" />
-                          <span>Download All as ZIP</span>
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4" />
-                          <span>Download Converted JPG</span>
-                        </>
+                    <div className="grid grid-cols-2 gap-3 text-center">
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
+                        <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Converted</span>
+                        <span className="text-xl font-bold text-brand-emerald">{successCount}</span>
+                      </div>
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
+                        <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Remaining</span>
+                        <span className="text-xl font-bold text-zinc-300">{pendingCount}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-2">
+                      {pendingCount > 0 && (
+                        <button
+                          onClick={handleStartConversion}
+                          disabled={isProcessing}
+                          className="flex w-full items-center justify-center space-x-2.5 rounded-xl bg-brand-violet py-3 text-sm font-semibold text-white shadow-md shadow-brand-violet/25 transition-all duration-200 hover:scale-[1.01] hover:bg-brand-violet/90 hover:shadow-brand-violet/30 disabled:pointer-events-none disabled:opacity-40"
+                        >
+                          <Play className="h-4 w-4 fill-current" />
+                          <span>{isProcessing ? 'Processing...' : `Convert ${pendingCount} ${pendingCount === 1 ? 'Image' : 'Images'}`}</span>
+                        </button>
                       )}
-                    </button>
-                  )}
+
+                      {successCount > 0 && (
+                        <button
+                          onClick={handleDownloadAll}
+                          disabled={isProcessing}
+                          className="flex w-full items-center justify-center space-x-2.5 rounded-xl bg-zinc-200 py-3 text-sm font-bold text-zinc-900 transition-all duration-200 hover:scale-[1.01]"
+                        >
+                          {successCount > 1 ? (
+                            <>
+                              <FolderArchive className="h-4 w-4" />
+                              <span>Download All as ZIP</span>
+                            </>
+                          ) : (
+                            <>
+                              <Download className="h-4 w-4" />
+                              <span>Download Converted JPG</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {files.length === 0 && (
+              <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pt-4 md:grid-cols-3">
+                <div className="flex flex-col items-center space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/20 p-4 text-center">
+                  <FileImage className="h-6 w-6 text-brand-violet" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-300">RAW Decoding</h2>
+                  <p className="text-[11px] text-zinc-400">Develops supported camera RAW files locally with embedded previews as a compatibility fallback.</p>
+                </div>
+                <div className="flex flex-col items-center space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/20 p-4 text-center">
+                  <Layers className="h-6 w-6 text-brand-emerald" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-300">Apple HEIC Support</h2>
+                  <p className="text-[11px] text-zinc-400">Encodes HEIC / HEIF image files from modern iPhones into standard JPEGs locally.</p>
+                </div>
+                <div className="flex flex-col items-center space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/20 p-4 text-center">
+                  <AlertCircle className="h-6 w-6 text-zinc-400" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-300">100% Client-Side</h2>
+                  <p className="text-[11px] text-zinc-400">No server uploads. Fast, private, and secure processing for your photos.</p>
                 </div>
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Explanatory Info Section if no files uploaded */}
-        {files.length === 0 && (
-          <section className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            <div className="bg-zinc-900/20 border border-zinc-850 rounded-xl p-4 flex flex-col items-center text-center space-y-2">
-              <FileImage className="w-6 h-6 text-brand-violet" />
-              <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">RAW Decoding</h4>
-              <p className="text-xxs text-zinc-400">
-                Develops supported camera RAW files locally with LibRaw, with embedded previews as a compatibility fallback.
-              </p>
+        <section id="features" className="scroll-mt-20 border-t border-zinc-900 px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="section-heading">
+              <span>Built for a better workflow</span>
+              <h2>Everything you need to convert with confidence</h2>
+              <p>Powerful image conversion without the usual uploads, accounts, or desktop software.</p>
             </div>
-            <div className="bg-zinc-900/20 border border-zinc-850 rounded-xl p-4 flex flex-col items-center text-center space-y-2">
-              <Layers className="w-6 h-6 text-brand-emerald" />
-              <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Apple HEIC Support</h4>
-              <p className="text-xxs text-zinc-400">
-                Encodes HEIC / HEIF high-efficiency image container files from modern iPhones into standard Web JPEGs locally.
-              </p>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map(({ title, description, icon: Icon }) => (
+                <article key={title} className="group rounded-2xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-zinc-700 hover:bg-zinc-900/55">
+                  <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-brand-violet/20 bg-brand-violet/10 text-brand-violet transition-transform duration-300 group-hover:scale-110">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-semibold text-zinc-100">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
+                </article>
+              ))}
             </div>
-            <div className="bg-zinc-900/20 border border-zinc-850 rounded-xl p-4 flex flex-col items-center text-center space-y-2">
-              <AlertCircle className="w-6 h-6 text-zinc-400" />
-              <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">100% Client-Side</h4>
-              <p className="text-xxs text-zinc-400">
-                Processed fully in your web browser. No server uploads. Unmatched speed, privacy, and security for your photos.
-              </p>
-            </div>
-          </section>
-        )}
+          </div>
+        </section>
 
+        <section id="supported-formats" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-900/30 px-6 py-12 sm:px-10">
+            <div className="section-heading">
+              <span>Broad camera compatibility</span>
+              <h2>Supported RAW formats</h2>
+              <p>Convert the formats used by popular Canon, Nikon, Sony, Panasonic, Fujifilm, Olympus, Pentax, and Adobe workflows.</p>
+            </div>
+            <ul className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label="Supported image formats">
+              {formats.map((format) => (
+                <li key={format} className="rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-4 text-center font-mono text-sm font-bold tracking-wider text-zinc-300 transition-colors hover:border-brand-violet/40 hover:text-brand-violet">
+                  .{format}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section id="why-pixavo" className="scroll-mt-20 border-y border-zinc-900 px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="section-heading">
+              <span>Local by design</span>
+              <h2>Why photographers choose Pixavo</h2>
+              <p>Your browser is the processing engine, giving you a faster and more private path from RAW to JPG.</p>
+            </div>
+            <div className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-800 sm:grid-cols-2 lg:grid-cols-4">
+              {benefits.map(({ title, description, icon: Icon }) => (
+                <article key={title} className="bg-zinc-950 p-6">
+                  <Icon className="mb-5 h-5 w-5 text-brand-emerald" aria-hidden="true" />
+                  <h3 className="text-sm font-semibold text-zinc-100">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="section-heading">
+              <span>Questions, answered</span>
+              <h2>Frequently asked questions</h2>
+              <p>The essentials about local processing, supported files, quality, and privacy.</p>
+            </div>
+            <div className="mt-10">
+              <FAQ />
+            </div>
+          </div>
+        </section>
+
+        <section id="blog" className="scroll-mt-20 px-4 pb-20 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-6xl gap-8 rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-8 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-violet">From the Pixavo blog</span>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-white">Better files, smarter workflows</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">Practical guides to RAW formats, JPEG quality, image metadata, and privacy-first creative tools.</p>
+            </div>
+            <a href="#features" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-200 transition-colors hover:text-brand-violet">
+              Explore Pixavo <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </section>
+
+        <section id="contact" className="scroll-mt-20 px-4 pb-24 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-brand-violet/20 bg-brand-violet/10 p-8 text-center sm:p-12">
+            <Mail className="mx-auto h-6 w-6 text-brand-violet" aria-hidden="true" />
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-white">Need help with Pixavo?</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-zinc-400">Have a format question or feedback about your conversion workflow? We’d love to hear from you.</p>
+            <a href="mailto:hello@pixavo.app" className="mt-6 inline-flex items-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition-transform hover:-translate-y-0.5">
+              Contact Pixavo
+            </a>
+          </div>
+        </section>
+
+        <div id="about" className="sr-only">Pixavo is a privacy-first browser image converter.</div>
+        <div id="privacy-policy" className="sr-only">Pixavo processes images locally and does not upload image data.</div>
+        <div id="terms-of-service" className="sr-only">Use Pixavo responsibly with files you are authorized to process.</div>
       </main>
 
-      {/* Footer */}
-      <footer className="text-center py-6 border-t border-zinc-900 text-xxs text-zinc-500 font-mono tracking-wide">
-        &copy; {new Date().getFullYear()} RAW TO JPEG CONVERTER. POWERED BY REACT & TAILWIND CSS.
-      </footer>
+      <Footer />
     </div>
   );
 }
