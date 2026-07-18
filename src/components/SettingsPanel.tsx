@@ -34,23 +34,23 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onChange
   };
 
   return (
-    <div className="w-full bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 backdrop-blur-md relative overflow-hidden">
+    <div className="w-full bg-white/90 border border-slate-100/80 rounded-3xl p-6 backdrop-blur-md relative overflow-hidden shadow-sm shadow-slate-100/50">
       {/* Background glow decoration */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-brand-violet/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-zinc-800/80">
+      <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
         <Sliders className="w-5 h-5 text-brand-violet" />
-        <h2 className="text-md font-semibold text-zinc-200">Conversion Settings</h2>
+        <h2 className="text-sm font-bold text-slate-800">Conversion Settings</h2>
       </div>
 
       <div className="space-y-6">
         {/* Quality Slider */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-medium text-zinc-300 flex items-center space-x-1.5">
+            <label className="text-sm font-semibold text-slate-700 flex items-center space-x-1.5">
               <span>Output JPEG Quality</span>
             </label>
-            <span className="text-xs font-mono font-semibold bg-brand-violet/10 border border-brand-violet/20 text-brand-violet px-2 py-0.5 rounded-md">
+            <span className="text-xs font-mono font-bold bg-brand-violet/10 border border-brand-violet/20 text-brand-violet px-2.5 py-0.5 rounded-md">
               {Math.round(settings.quality * 100)}%
             </span>
           </div>
@@ -61,9 +61,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onChange
             step="0.05"
             value={settings.quality}
             onChange={handleQualityChange}
-            className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-brand-violet focus:outline-none"
+            className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-violet focus:outline-none"
           />
-          <div className="flex justify-between text-xxs text-zinc-500 font-mono">
+          <div className="flex justify-between text-[10px] text-slate-400 font-mono">
             <span>Smaller File (10%)</span>
             <span>Balanced (90%)</span>
             <span>Maximum (100%)</span>
@@ -72,15 +72,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onChange
 
         {/* Resizing Options */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-zinc-300 flex items-center space-x-1.5">
-            <Maximize2 className="w-4 h-4 text-zinc-400" />
+          <label className="text-sm font-semibold text-slate-700 flex items-center space-x-1.5">
+            <Maximize2 className="w-4 h-4 text-slate-400" />
             <span>Resize Dimension Limit</span>
           </label>
           <div className="relative">
             <select
               value={settings.resizeMode}
               onChange={handleResizeModeChange}
-              className="w-full bg-zinc-800/80 border border-zinc-700 hover:border-zinc-650 text-zinc-200 px-3.5 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-brand-violet focus:border-brand-violet cursor-pointer appearance-none"
+              className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 px-3.5 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/10 focus:border-brand-violet cursor-pointer appearance-none transition-all duration-200"
             >
               <option value="original">Keep Original Dimensions</option>
               <option value="4k">Limit to 4K (3840px max side)</option>
@@ -89,7 +89,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onChange
               <option value="custom">Custom Width / Height</option>
             </select>
             {/* Custom dropdown arrow */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                 <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
               </svg>
@@ -100,23 +100,23 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onChange
           {settings.resizeMode === 'custom' && (
             <div className="grid grid-cols-2 gap-4 pt-1 animate-fadeIn">
               <div className="space-y-1.5">
-                <span className="text-xs text-zinc-400">Max Width (px)</span>
+                <span className="text-xs font-semibold text-slate-500">Max Width (px)</span>
                 <input
                   type="number"
                   placeholder="e.g. 1920"
                   value={settings.customWidth || ''}
                   onChange={handleCustomWidthChange}
-                  className="w-full bg-zinc-850 border border-zinc-700 hover:border-zinc-650 text-zinc-200 px-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-brand-violet focus:border-brand-violet font-mono"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 text-slate-700 px-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/10 focus:border-brand-violet font-mono"
                 />
               </div>
               <div className="space-y-1.5">
-                <span className="text-xs text-zinc-400">Max Height (px)</span>
+                <span className="text-xs font-semibold text-slate-500">Max Height (px)</span>
                 <input
                   type="number"
                   placeholder="e.g. 1080"
                   value={settings.customHeight || ''}
                   onChange={handleCustomHeightChange}
-                  className="w-full bg-zinc-850 border border-zinc-700 hover:border-zinc-650 text-zinc-200 px-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-brand-violet focus:border-brand-violet font-mono"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 text-slate-700 px-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/10 focus:border-brand-violet font-mono"
                 />
               </div>
             </div>
@@ -133,15 +133,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onChange
                 onChange={handleKeepMetadataChange}
                 className="sr-only peer"
               />
-              <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-emerald peer-checked:after:bg-zinc-950" />
+              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-emerald peer-checked:after:bg-white shadow-sm" />
             </div>
-            <span className="text-sm font-medium text-zinc-300 group-hover:text-zinc-200 transition-colors flex items-center space-x-1.5">
-              <FileText className="w-4 h-4 text-zinc-400 group-hover:text-brand-emerald transition-colors" />
+            <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-800 transition-colors flex items-center space-x-1.5">
+              <FileText className="w-4 h-4 text-slate-400 group-hover:text-brand-emerald transition-colors" />
               <span>Preserve EXIF camera metadata</span>
             </span>
           </label>
-          <p className="text-xxs text-zinc-500 mt-2 ml-12">
-            Turn on to keep camera information (shutter speed, ISO, aperture, etc.) embedded in the final JPEG image. Note that standard canvas conversions strip metadata by default; we will re-insert EXIF blocks for supported standard files.
+          <p className="text-[10px] text-slate-400 mt-2.5 ml-12 leading-relaxed">
+            Keep camera details (shutter speed, ISO, aperture, etc.) embedded in the final JPEG image. Note that standard canvas conversions strip metadata by default; we will re-insert EXIF blocks for supported standard files.
           </p>
         </div>
       </div>

@@ -19,8 +19,8 @@ const navigationItems: NavigationItem[] = [
 
 export function PixavoLogo() {
   return (
-    <span className="inline-flex items-center gap-2.5 text-white">
-      <span className="relative h-10 w-10 overflow-hidden rounded-xl shadow-lg shadow-brand-violet/15">
+    <span className="inline-flex items-center gap-2.5 text-slate-900">
+      <span className="relative h-10 w-10 overflow-hidden rounded-xl shadow-lg shadow-brand-violet/10">
         <img
           src={logoUrl}
           alt=""
@@ -28,7 +28,7 @@ export function PixavoLogo() {
           aria-hidden="true"
         />
       </span>
-      <span className="text-lg font-bold tracking-tight">Pixavo</span>
+      <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-800 bg-clip-text text-transparent">Pixavo</span>
     </span>
   );
 }
@@ -80,7 +80,7 @@ export function Header() {
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         isScrolled || isMenuOpen
-          ? 'border-b border-zinc-800/80 bg-zinc-950/80 shadow-lg shadow-black/10 backdrop-blur-xl'
+          ? 'border-b border-slate-200/60 bg-white/85 shadow-sm backdrop-blur-xl'
           : 'border-b border-transparent bg-transparent'
       }`}
     >
@@ -92,15 +92,15 @@ export function Header() {
           <PixavoLogo />
         </a>
 
-        <div className="hidden items-center gap-1 lg:flex">
+        <div className="hidden items-center gap-1 lg:flex ml-auto">
           {navigationItems.map((item) => (
             <a
               key={item.sectionId}
               href={item.href}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${
                 activeSection === item.sectionId
-                  ? 'bg-white/5 text-white'
-                  : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100'
+                  ? 'bg-brand-violet/10 text-brand-violet shadow-sm'
+                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
               }`}
               aria-current={activeSection === item.sectionId ? 'location' : undefined}
             >
@@ -109,16 +109,10 @@ export function Header() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <a
-            href="#converter"
-            className="hidden rounded-xl bg-brand-violet px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-violet/20 transition-all hover:-translate-y-0.5 hover:bg-violet-500 hover:shadow-brand-violet/30 sm:inline-flex"
-          >
-            Convert Images
-          </a>
+        <div className="flex items-center gap-2 lg:hidden">
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/70 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 lg:hidden shadow-sm"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-navigation"
@@ -136,28 +130,22 @@ export function Header() {
         }`}
       >
         <div className="min-h-0">
-          <div className="mx-auto max-w-7xl space-y-1 border-t border-zinc-800/70 px-4 py-4 sm:px-6">
+          <div className="mx-auto max-w-7xl space-y-1 border-t border-slate-100 px-4 py-4 sm:px-6 bg-slate-50/50">
             {navigationItems.map((item) => (
               <a
                 key={item.sectionId}
                 href={item.href}
                 onClick={closeMenu}
-                className={`block rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
+                className={`block rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${
                   activeSection === item.sectionId
                     ? 'bg-brand-violet/10 text-brand-violet'
-                    : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 {item.label}
               </a>
             ))}
-            <a
-              href="#converter"
-              onClick={closeMenu}
-              className="mt-3 flex w-full items-center justify-center rounded-xl bg-brand-violet px-4 py-3 text-sm font-semibold text-white sm:hidden"
-            >
-              Convert Images
-            </a>
+            {/* CTA button removed */}
           </div>
         </div>
       </div>

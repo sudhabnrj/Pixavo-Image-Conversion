@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import exifr from 'exifr';
-import heic2any from 'heic2any';
-import JSZip from 'jszip';
-import LibRaw from 'libraw-wasm';
-import { 
-  Sparkles, 
-  Trash2, 
-  Download, 
-  FolderArchive, 
-  Play, 
+import {
+  Sparkles,
+  Trash2,
+  Download,
+  FolderArchive,
+  Play,
   AlertCircle,
   FileImage,
   Layers,
@@ -39,7 +36,14 @@ import {
 } from './utils/memory';
 import type { ImageFile, ConversionSettings, CameraMetadata } from './types';
 
-const rawDecoder = new LibRaw();
+let rawDecoderInstance: any = null;
+const getRawDecoder = async () => {
+  if (!rawDecoderInstance) {
+    const LibRaw = (await import('libraw-wasm')).default;
+    rawDecoderInstance = new LibRaw();
+  }
+  return rawDecoderInstance;
+};
 
 const features = [
   { title: '100% Browser Based', description: 'Everything runs directly in your browser—no remote processing.', icon: MonitorCheck },
@@ -59,6 +63,28 @@ const benefits = [
   { title: 'Secure Local Processing', description: 'Browser-native processing keeps sensitive photography under your control.', icon: ShieldCheck },
 ];
 
+interface ConversionTool {
+  id: string;
+  title: string;
+  desc: string;
+  from: string;
+  to: string;
+  color: 'violet' | 'emerald' | 'rose' | 'blue' | 'amber' | 'indigo' | 'teal' | 'orange';
+  isFunctional: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const conversionTools: ConversionTool[] = [
+  { id: 'raw-jpg', title: 'RAW to JPG', desc: 'Develop camera RAW files (DNG, CR2, NEF, ARW) into optimized JPEG format.', from: 'RAW', to: 'JPG', color: 'violet', isFunctional: true, icon: FileImage },
+  { id: 'heic-jpg', title: 'HEIC to JPG', desc: 'Convert Apple HEIC photos to standard JPEG formats locally.', from: 'HEIC', to: 'JPG', color: 'emerald', isFunctional: true, icon: Layers },
+  { id: 'png-jpg', title: 'PNG to JPG', desc: 'Convert transparent or standard PNG images to compressed JPEG files.', from: 'PNG', to: 'JPG', color: 'rose', isFunctional: false, icon: Images },
+  { id: 'jpg-png', title: 'JPG to PNG', desc: 'Convert JPG images to PNG format with alpha channel support.', from: 'JPG', to: 'PNG', color: 'blue', isFunctional: false, icon: Files },
+  { id: 'raw-png', title: 'RAW to PNG', desc: 'Convert camera RAW files directly to high quality PNG format.', from: 'RAW', to: 'PNG', color: 'amber', isFunctional: false, icon: MonitorCheck },
+  { id: 'png-raw', title: 'PNG to RAW', desc: 'Pack PNG graphics back into uncompressed sensor container stubs.', from: 'PNG', to: 'RAW', color: 'indigo', isFunctional: false, icon: Gem },
+  { id: 'webp-jpg', title: 'WebP to JPG', desc: 'Decompress modern WebP image formats into standard JPEGs.', from: 'WebP', to: 'JPG', color: 'teal', isFunctional: false, icon: DownloadCloud },
+  { id: 'jpg-webp', title: 'JPG to WebP', desc: 'Encode regular JPEGs into modern, highly compressed WebP files.', from: 'JPG', to: 'WebP', color: 'orange', isFunctional: false, icon: Sparkles }
+];
+
 function App() {
   const [files, setFiles] = useState<ImageFile[]>([]);
   const filesRef = useRef<ImageFile[]>([]);
@@ -69,6 +95,7 @@ function App() {
     keepMetadata: true
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeTool, setActiveTool] = useState<string>('raw-jpg');
   const [globalProgress, setGlobalProgress] = useState(0);
 
   useEffect(() => {
@@ -126,6 +153,7 @@ function App() {
       }
     } else if (isHeic) {
       try {
+        const heic2any = (await import('heic2any')).default;
         // heic2any can decode a lower-quality preview blob
         const converted = await heic2any({
           blob: file,
@@ -203,7 +231,7 @@ function App() {
     updateProgress: (p: number) => void
   ): Promise<{ blob: Blob; width: number; height: number }> => {
     updateProgress(10);
-    
+
     let sourceBlob: Blob | undefined;
     let decodedRawCanvas: HTMLCanvasElement | undefined;
     const ext = item.name.split('.').pop()?.toLowerCase() || '';
@@ -214,6 +242,7 @@ function App() {
       updateProgress(20);
       try {
         const rawBytes = new Uint8Array(await item.file.arrayBuffer());
+        const rawDecoder = await getRawDecoder();
         await rawDecoder.open(rawBytes, {
           outputBps: 8,
           outputColor: 1,
@@ -270,12 +299,13 @@ function App() {
       }
     } else if (isHeic) {
       updateProgress(20);
+      const heic2any = (await import('heic2any')).default;
       const result = await heic2any({
-          blob: item.file,
-          toType: 'image/jpeg',
-          quality: currentSettings.quality
-        });
-        sourceBlob = (Array.isArray(result) ? result[0] : result) as Blob;
+        blob: item.file,
+        toType: 'image/jpeg',
+        quality: currentSettings.quality
+      });
+      sourceBlob = (Array.isArray(result) ? result[0] : result) as Blob;
       updateProgress(50);
     } else {
       sourceBlob = item.file;
@@ -349,25 +379,39 @@ function App() {
 
         canvas.width = targetWidth;
         canvas.height = targetHeight;
-        
+
         try {
+          // Fill canvas with white background to handle transparency gracefully (prevent black background in JPEG)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, targetWidth, targetHeight);
           // Render image onto canvas
           ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
           updateProgress(85);
 
           canvas.toBlob(
-            (blob) => {
+            async (blob) => {
               releaseCanvas(canvas);
               if (!blob) {
                 rejectOnce(new Error('Canvas compression returned empty output.'));
                 return;
               }
               if (isSettled) return;
+
+              let finalBlob = blob;
+              if (currentSettings.keepMetadata && item.metadata) {
+                try {
+                  const { writeExifToBlob } = await import('./utils/exif');
+                  finalBlob = await writeExifToBlob(blob, item.metadata);
+                } catch (exifErr) {
+                  console.warn('Failed to insert EXIF metadata:', exifErr);
+                }
+              }
+
               isSettled = true;
               updateProgress(100);
               releaseTemporaryResources();
               resolve({
-                blob,
+                blob: finalBlob,
                 width: targetWidth,
                 height: targetHeight
               });
@@ -417,8 +461,8 @@ function App() {
 
       try {
         const { blob, width, height } = await convertSingleImage(
-          item, 
-          settings, 
+          item,
+          settings,
           (prog) => {
             setFiles(prev => prev.map(f => f.id === item.id ? { ...f, progress: prog } : f));
           }
@@ -431,22 +475,22 @@ function App() {
           if (f.id !== item.id) return f;
           revokeObjectUrl(f.resultUrl);
           return {
-                ...f, 
-                status: 'success', 
-                progress: 100, 
-                convertedSize: blob.size, 
-                resultBlob: blob, 
-                resultUrl,
-                width,
-                height
+            ...f,
+            status: 'success',
+            progress: 100,
+            convertedSize: blob.size,
+            resultBlob: blob,
+            resultUrl,
+            width,
+            height
           };
         }));
       } catch (err: unknown) {
         console.error('Error during image conversion:', err);
         const errorMessage = err instanceof Error ? err.message : 'Error occurred during processing.';
-        setFiles(prev => prev.map(f => 
-          f.id === item.id 
-            ? { ...f, status: 'error', errorMsg: errorMessage, progress: 0 } 
+        setFiles(prev => prev.map(f =>
+          f.id === item.id
+            ? { ...f, status: 'error', errorMsg: errorMessage, progress: 0 }
             : f
         ));
       }
@@ -486,6 +530,7 @@ function App() {
     }
 
     // Multiple files: package into ZIP
+    const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
     successFiles.forEach((file) => {
       if (file.resultBlob) {
@@ -526,147 +571,232 @@ function App() {
           className="scroll-mt-24 px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:px-8"
           aria-labelledby="converter-title"
         >
-          <div className="mx-auto max-w-6xl space-y-8">
+          <div className="mx-auto max-w-6xl space-y-10">
             <div className="space-y-4 text-center">
-              <div className="inline-flex items-center space-x-2.5 rounded-full border border-brand-violet/20 bg-brand-violet/10 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-brand-violet">
+              <div className="inline-flex items-center space-x-2 rounded-full border border-brand-violet/10 bg-brand-violet/5 px-4 py-1.5 text-xs font-bold tracking-wide text-brand-violet shadow-sm">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Local Browser Image Processing</span>
+                <span>Local Browser Image Development</span>
               </div>
-              <h1 id="converter-title" className="text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">
-                Raw to JPEG Converter
+              <h1 id="converter-title" className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-6xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 bg-clip-text text-transparent">
+                Develop RAW Photos Instantly
               </h1>
-              <p className="mx-auto max-w-2xl text-sm text-zinc-400 sm:text-base">
-                Convert proprietary RAW digital photos, HEIC, PNGs, and WebPs into optimized JPGs. Fully secure, client-side conversion means files never leave your computer.
+              <p className="mx-auto max-w-2xl text-sm text-slate-500 sm:text-base leading-relaxed">
+                Convert proprietary RAW formats, HEIC, PNGs, and WebPs into optimized JPGs. Fully secure, client-side conversion means your photos never leave your device.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
-              <div className="space-y-6 lg:col-span-2">
-                <Dropzone onFilesAdded={handleFilesAdded} />
+            {/* iLoveIMG Style tools selection grid */}
+            <div className="space-y-6 pt-4 animate-fadeIn">
+              <h2 className="text-center text-sm font-bold uppercase tracking-wider text-slate-400">Select Image Tool</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                {conversionTools.map((tool) => {
+                  const isActive = activeTool === tool.id;
+                  const Icon = tool.icon;
 
-                {files.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-xl border border-zinc-800/80 bg-zinc-900/20 px-4 py-3 backdrop-blur-md">
-                      <div className="flex items-center space-x-2 text-xs font-semibold text-zinc-300 sm:text-sm">
-                        <Layers className="h-4 w-4 text-zinc-400" />
-                        <span>Queue List ({files.length} {files.length === 1 ? 'file' : 'files'})</span>
+                  // Map color classes
+                  const colorMap = {
+                    violet: { bgClass: 'bg-brand-violet text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-brand-violet/25 hover:shadow-xl' },
+                    emerald: { bgClass: 'bg-brand-emerald text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-brand-emerald/25 hover:shadow-xl' },
+                    rose: { bgClass: 'bg-rose-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-rose-600/25 hover:shadow-xl' },
+                    blue: { bgClass: 'bg-blue-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-blue-600/25 hover:shadow-xl' },
+                    amber: { bgClass: 'bg-amber-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-amber-600/25 hover:shadow-xl' },
+                    indigo: { bgClass: 'bg-indigo-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-indigo-600/25 hover:shadow-xl' },
+                    teal: { bgClass: 'bg-teal-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-teal-600/25 hover:shadow-xl' },
+                    orange: { bgClass: 'bg-orange-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-orange-600/25 hover:shadow-xl' }
+                  };
+
+                  const colors = colorMap[tool.color];
+
+                  return (
+                    <button
+                      key={tool.id}
+                      onClick={() => {
+                        setActiveTool(tool.id);
+                        setTimeout(() => {
+                          document.getElementById('converter-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                      }}
+                      className={`group flex flex-col items-start p-6 text-left rounded-3xl border border-transparent transition-all duration-300 cursor-pointer ${colors.bgClass} ${
+                        isActive 
+                          ? `ring-4 ring-offset-2 ring-slate-800 scale-[1.02] shadow-xl` 
+                          : `${colors.shadow} hover:-translate-y-1`
+                      }`}
+                    >
+                      <div className={`p-3 rounded-xl mb-4 ${colors.iconBg} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+                        <Icon className="h-5 w-5" />
                       </div>
-                      <button
-                        onClick={handleClearAll}
-                        disabled={isProcessing}
-                        className="flex items-center space-x-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-semibold text-zinc-400 transition-all duration-200 hover:bg-zinc-800 hover:text-rose-400 disabled:pointer-events-none disabled:opacity-30"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        <span>Clear All</span>
-                      </button>
-                    </div>
+                      <h3 className={`text-[17px] font-extrabold ${colors.text} mb-2 w-full`}>
+                        {tool.title}
+                      </h3>
+                      <p className={`text-[13.5px] ${colors.desc} leading-relaxed`}>{tool.desc}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                    <div className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
-                      {files.map((item) => (
-                        <FileCard
-                          key={item.id}
-                          item={item}
-                          onRemove={handleRemoveFile}
-                          onDownload={handleDownloadFile}
-                        />
-                      ))}
-                    </div>
+            {/* Converter Workspace container */}
+            <div
+              id="converter-workspace"
+              className="scroll-mt-24 rounded-[2rem] border border-slate-100/80 bg-white/70 p-6 md:p-8 shadow-sm backdrop-blur-md space-y-6"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-4">
+                <div>
+                  <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-brand-violet/10 text-brand-violet">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <span>Workspace: {conversionTools.find(t => t.id === activeTool)?.title} Converter</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">Configure options and develop your files locally.</p>
+                </div>
+                {!conversionTools.find(t => t.id === activeTool)?.isFunctional && (
+                  <div className="inline-flex items-center space-x-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                    <span>⚠️ Mode Preview Only (Demo)</span>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-6">
-                <SettingsPanel settings={settings} onChange={setSettings} />
+              {!conversionTools.find(t => t.id === activeTool)?.isFunctional && (
+                <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100 text-xs text-amber-800 leading-relaxed animate-fadeIn">
+                  <strong>Notice:</strong> This conversion path is a UI design option. The local image compiler currently defaults standard, RAW, and HEIC files to the developed JPEG compression pipeline.
+                </div>
+              )}
 
-                {files.length > 0 && (
-                  <div className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-md">
-                    <h2 className="text-sm font-semibold text-zinc-300">Conversion Dashboard</h2>
-                    {isProcessing && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between font-mono text-xs">
-                          <span className="font-semibold text-brand-violet">Converting Queue...</span>
-                          <span>{globalProgress}%</span>
+              <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+                <div className="space-y-6 lg:col-span-2">
+                  <Dropzone onFilesAdded={handleFilesAdded} />
+
+                  {files.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-md">
+                        <div className="flex items-center space-x-2 text-xs font-bold text-slate-700 sm:text-sm">
+                          <Layers className="h-4 w-4 text-slate-400" />
+                          <span>Queue List ({files.length} {files.length === 1 ? 'file' : 'files'})</span>
                         </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
-                          <div
-                            className="h-full rounded-full bg-brand-violet transition-all duration-300"
-                            style={{ width: `${globalProgress}%` }}
+                        <button
+                          onClick={handleClearAll}
+                          disabled={isProcessing}
+                          className="flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 transition-all duration-200 hover:bg-slate-50 hover:text-rose-600 shadow-sm disabled:pointer-events-none disabled:opacity-30 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Clear All</span>
+                        </button>
+                      </div>
+
+                      <div className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
+                        {files.map((item) => (
+                          <FileCard
+                            key={item.id}
+                            item={item}
+                            onRemove={handleRemoveFile}
+                            onDownload={handleDownloadFile}
                           />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-6">
+                  <SettingsPanel settings={settings} onChange={setSettings} />
+
+                  {files.length > 0 && (
+                    <div className="space-y-4 rounded-3xl border border-slate-100 bg-white/80 p-6 backdrop-blur-md shadow-sm">
+                      <h2 className="text-sm font-bold text-slate-800">Conversion Dashboard</h2>
+                      {isProcessing && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between font-mono text-xs">
+                            <span className="font-semibold text-brand-violet">Converting Queue...</span>
+                            <span className="font-bold text-slate-600">{globalProgress}%</span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full rounded-full bg-brand-violet transition-all duration-300"
+                              style={{ width: `${globalProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3 text-center">
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3 shadow-inner">
+                          <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Converted</span>
+                          <span className="text-xl font-extrabold text-brand-emerald">{successCount}</span>
+                        </div>
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3 shadow-inner">
+                          <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Remaining</span>
+                          <span className="text-xl font-extrabold text-slate-700">{pendingCount}</span>
                         </div>
                       </div>
-                    )}
 
-                    <div className="grid grid-cols-2 gap-3 text-center">
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
-                        <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Converted</span>
-                        <span className="text-xl font-bold text-brand-emerald">{successCount}</span>
-                      </div>
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
-                        <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Remaining</span>
-                        <span className="text-xl font-bold text-zinc-300">{pendingCount}</span>
+                      <div className="flex flex-col gap-3 pt-2">
+                        {pendingCount > 0 && (
+                          <button
+                            onClick={handleStartConversion}
+                            disabled={isProcessing}
+                            className="flex w-full items-center justify-center space-x-2.5 rounded-xl bg-gradient-to-r from-brand-violet to-violet-500 py-3 text-sm font-bold text-white shadow-lg shadow-brand-violet/20 hover:shadow-brand-violet/30 hover:scale-[1.01] transition-all duration-250 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                          >
+                            <Play className="h-4 w-4 fill-current" />
+                            <span>{isProcessing ? 'Processing...' : `Convert ${pendingCount} ${pendingCount === 1 ? 'Image' : 'Images'}`}</span>
+                          </button>
+                        )}
+
+                        {successCount > 0 && (
+                          <button
+                            onClick={handleDownloadAll}
+                            disabled={isProcessing}
+                            className="flex w-full items-center justify-center space-x-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:scale-[1.01] cursor-pointer"
+                          >
+                            {successCount > 1 ? (
+                              <>
+                                <FolderArchive className="h-4 w-4" />
+                                <span>Download All as ZIP</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4" />
+                                <span>Download Converted JPG</span>
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex flex-col gap-3 pt-2">
-                      {pendingCount > 0 && (
-                        <button
-                          onClick={handleStartConversion}
-                          disabled={isProcessing}
-                          className="flex w-full items-center justify-center space-x-2.5 rounded-xl bg-brand-violet py-3 text-sm font-semibold text-white shadow-md shadow-brand-violet/25 transition-all duration-200 hover:scale-[1.01] hover:bg-brand-violet/90 hover:shadow-brand-violet/30 disabled:pointer-events-none disabled:opacity-40"
-                        >
-                          <Play className="h-4 w-4 fill-current" />
-                          <span>{isProcessing ? 'Processing...' : `Convert ${pendingCount} ${pendingCount === 1 ? 'Image' : 'Images'}`}</span>
-                        </button>
-                      )}
-
-                      {successCount > 0 && (
-                        <button
-                          onClick={handleDownloadAll}
-                          disabled={isProcessing}
-                          className="flex w-full items-center justify-center space-x-2.5 rounded-xl bg-zinc-200 py-3 text-sm font-bold text-zinc-900 transition-all duration-200 hover:scale-[1.01]"
-                        >
-                          {successCount > 1 ? (
-                            <>
-                              <FolderArchive className="h-4 w-4" />
-                              <span>Download All as ZIP</span>
-                            </>
-                          ) : (
-                            <>
-                              <Download className="h-4 w-4" />
-                              <span>Download Converted JPG</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
             {files.length === 0 && (
-              <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pt-4 md:grid-cols-3">
-                <div className="flex flex-col items-center space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/20 p-4 text-center">
-                  <FileImage className="h-6 w-6 text-brand-violet" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-300">RAW Decoding</h2>
-                  <p className="text-[11px] text-zinc-400">Develops supported camera RAW files locally with embedded previews as a compatibility fallback.</p>
+              <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pt-4 md:grid-cols-3 animate-fadeIn">
+                <div className="flex flex-col items-center space-y-2 rounded-2xl border border-slate-100 bg-white/70 p-5 text-center shadow-sm backdrop-blur-md hover:shadow-md transition-shadow duration-200">
+                  <div className="p-2.5 rounded-xl bg-brand-violet/10 text-brand-violet mb-1 shadow-sm">
+                    <FileImage className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">RAW Decoding</h2>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">Develops supported camera RAW files locally with embedded previews as a compatibility fallback.</p>
                 </div>
-                <div className="flex flex-col items-center space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/20 p-4 text-center">
-                  <Layers className="h-6 w-6 text-brand-emerald" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-300">Apple HEIC Support</h2>
-                  <p className="text-[11px] text-zinc-400">Encodes HEIC / HEIF image files from modern iPhones into standard JPEGs locally.</p>
+                <div className="flex flex-col items-center space-y-2 rounded-2xl border border-slate-100 bg-white/70 p-5 text-center shadow-sm backdrop-blur-md hover:shadow-md transition-shadow duration-200">
+                  <div className="p-2.5 rounded-xl bg-brand-emerald/10 text-brand-emerald mb-1 shadow-sm">
+                    <Layers className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">Apple HEIC Support</h2>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">Encodes HEIC / HEIF image files from modern iPhones into standard JPEGs locally.</p>
                 </div>
-                <div className="flex flex-col items-center space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/20 p-4 text-center">
-                  <AlertCircle className="h-6 w-6 text-zinc-400" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-300">100% Client-Side</h2>
-                  <p className="text-[11px] text-zinc-400">No server uploads. Fast, private, and secure processing for your photos.</p>
+                <div className="flex flex-col items-center space-y-2 rounded-2xl border border-slate-100 bg-white/70 p-5 text-center shadow-sm backdrop-blur-md hover:shadow-md transition-shadow duration-200">
+                  <div className="p-2.5 rounded-xl bg-slate-100 text-slate-600 mb-1 shadow-sm">
+                    <AlertCircle className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">100% Client-Side</h2>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">No server uploads. Fast, private, and secure processing for your photos.</p>
                 </div>
               </div>
             )}
           </div>
         </section>
 
-        <section id="features" className="scroll-mt-20 border-t border-zinc-900 px-4 py-20 sm:px-6 lg:px-8">
+        <section id="features" className="scroll-mt-20 border-t border-slate-100 px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <div className="section-heading">
               <span>Built for a better workflow</span>
@@ -675,12 +805,12 @@ function App() {
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {features.map(({ title, description, icon: Icon }) => (
-                <article key={title} className="group rounded-2xl border border-zinc-800 bg-zinc-900/30 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-zinc-700 hover:bg-zinc-900/55">
-                  <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-brand-violet/20 bg-brand-violet/10 text-brand-violet transition-transform duration-300 group-hover:scale-110">
+                <article key={title} className="group rounded-3xl border border-slate-100 bg-white/75 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-slate-200 hover:bg-white hover:shadow-lg hover:shadow-slate-100/50">
+                  <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-brand-violet/10 bg-brand-violet/5 text-brand-violet transition-transform duration-300 group-hover:scale-110 shadow-sm">
                     <Icon className="h-5 w-5" aria-hidden="true" />
                   </div>
-                  <h3 className="font-semibold text-zinc-100">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
+                  <h3 className="font-bold text-slate-800">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
                 </article>
               ))}
             </div>
@@ -688,7 +818,7 @@ function App() {
         </section>
 
         <section id="supported-formats" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-900/30 px-6 py-12 sm:px-10">
+          <div className="mx-auto max-w-6xl rounded-[2rem] border border-slate-100 bg-white/80 px-6 py-12 sm:px-10 shadow-sm backdrop-blur-md">
             <div className="section-heading">
               <span>Broad camera compatibility</span>
               <h2>Supported RAW formats</h2>
@@ -696,7 +826,7 @@ function App() {
             </div>
             <ul className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label="Supported image formats">
               {formats.map((format) => (
-                <li key={format} className="rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-4 text-center font-mono text-sm font-bold tracking-wider text-zinc-300 transition-colors hover:border-brand-violet/40 hover:text-brand-violet">
+                <li key={format} className="rounded-2xl border border-slate-100 bg-slate-50/50 px-4 py-4 text-center font-mono text-sm font-bold tracking-wider text-slate-600 transition-all hover:border-brand-violet/30 hover:bg-white hover:text-brand-violet hover:shadow-md hover:shadow-slate-100/50 cursor-pointer">
                   .{format}
                 </li>
               ))}
@@ -704,19 +834,19 @@ function App() {
           </div>
         </section>
 
-        <section id="why-pixavo" className="scroll-mt-20 border-y border-zinc-900 px-4 py-20 sm:px-6 lg:px-8">
+        <section id="why-pixavo" className="scroll-mt-20 border-y border-slate-100 bg-slate-50/20 px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <div className="section-heading">
               <span>Local by design</span>
               <h2>Why photographers choose Pixavo</h2>
               <p>Your browser is the processing engine, giving you a faster and more private path from RAW to JPG.</p>
             </div>
-            <div className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-800 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-px overflow-hidden rounded-3xl border border-slate-100 bg-slate-200 sm:grid-cols-2 lg:grid-cols-4 shadow-sm">
               {benefits.map(({ title, description, icon: Icon }) => (
-                <article key={title} className="bg-zinc-950 p-6">
+                <article key={title} className="bg-white p-6 hover:bg-slate-50/50 transition-colors duration-200">
                   <Icon className="mb-5 h-5 w-5 text-brand-emerald" aria-hidden="true" />
-                  <h3 className="text-sm font-semibold text-zinc-100">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
+                  <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
                 </article>
               ))}
             </div>
@@ -737,24 +867,24 @@ function App() {
         </section>
 
         <section id="blog" className="scroll-mt-20 px-4 pb-20 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-6xl gap-8 rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-8 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="mx-auto grid max-w-6xl gap-8 rounded-[2rem] border border-slate-100 bg-gradient-to-br from-white to-slate-50/50 p-8 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center shadow-sm">
             <div>
               <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-violet">From the Pixavo blog</span>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-white">Better files, smarter workflows</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">Practical guides to RAW formats, JPEG quality, image metadata, and privacy-first creative tools.</p>
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900">Better files, smarter workflows</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Practical guides to RAW formats, JPEG quality, image metadata, and privacy-first creative tools.</p>
             </div>
-            <a href="#features" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-200 transition-colors hover:text-brand-violet">
+            <a href="#features" className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 transition-colors hover:text-brand-violet">
               Explore Pixavo <ArrowRight className="h-4 w-4" />
             </a>
           </div>
         </section>
 
         <section id="contact" className="scroll-mt-20 px-4 pb-24 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-brand-violet/20 bg-brand-violet/10 p-8 text-center sm:p-12">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-brand-violet/10 bg-brand-violet/5 p-8 text-center sm:p-12 shadow-sm">
             <Mail className="mx-auto h-6 w-6 text-brand-violet" aria-hidden="true" />
-            <h2 className="mt-4 text-2xl font-bold tracking-tight text-white">Need help with Pixavo?</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-zinc-400">Have a format question or feedback about your conversion workflow? We’d love to hear from you.</p>
-            <a href="mailto:hello@pixavo.app" className="mt-6 inline-flex items-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition-transform hover:-translate-y-0.5">
+            <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900">Need help with Pixavo?</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">Have a format question or feedback about your conversion workflow? We’d love to hear from you.</p>
+            <a href="mailto:hello@pixavo.app" className="mt-6 inline-flex items-center rounded-xl bg-slate-900 hover:bg-slate-950 px-6 py-3 text-sm font-bold text-white transition-all hover:-translate-y-0.5 shadow-md shadow-slate-900/10 cursor-pointer">
               Contact Pixavo
             </a>
           </div>
