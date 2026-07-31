@@ -13,6 +13,7 @@ import type { ImageFile } from '../types';
 
 interface FileCardProps {
   item: ImageFile;
+  targetExt?: string;
   onRemove: (id: string) => void;
   onDownload: (item: ImageFile) => void;
 }
@@ -26,7 +27,7 @@ const formatExposureTime = (exposureTime?: string) => {
   return `1/${Math.round(1 / num)}s`;
 };
 
-export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, onDownload }) => {
+export const FileCard: React.FC<FileCardProps> = ({ item, targetExt = 'jpg', onRemove, onDownload }) => {
   const [showMetadata, setShowMetadata] = useState(false);
   const [previewMode, setPreviewMode] = useState<'original' | 'converted'>('converted');
 
@@ -54,6 +55,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, onDownload }
 
   const hasMetadata = item.metadata && Object.values(item.metadata).some(val => val !== undefined);
   const savingsInfo = getSavings();
+  const formatLabel = targetExt.toUpperCase();
 
   return (
     <div className={`w-full bg-white/70 border rounded-3xl transition-all duration-300 backdrop-blur-md overflow-hidden ${
@@ -85,7 +87,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, onDownload }
                     e.stopPropagation();
                     setPreviewMode(prev => prev === 'converted' ? 'original' : 'converted');
                   }}
-                  className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200"
+                  className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200 cursor-pointer"
                   title="Toggle Original/Converted preview"
                 >
                   <Eye className="w-4 h-4 text-white" />
@@ -151,7 +153,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, onDownload }
             <div className="flex items-center space-x-2.5">
               <CheckCircle2 className="w-4.5 h-4.5 text-brand-emerald shrink-0" />
               <div className="text-xs">
-                <span className="text-slate-700 font-semibold">JPEG size: {formatSize(item.convertedSize)}</span>
+                <span className="text-slate-700 font-semibold">{formatLabel} size: {formatSize(item.convertedSize)}</span>
                 {savingsInfo.isPositive ? (
                   <span className="text-brand-emerald font-bold ml-2">
                     (Saved {savingsInfo.percent}% / {savingsInfo.saved})
@@ -184,7 +186,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, onDownload }
           {hasMetadata && (
             <button
               onClick={() => setShowMetadata(prev => !prev)}
-              className={`p-2 rounded-xl border transition-all duration-200 ${
+              className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer ${
                 showMetadata 
                   ? 'border-brand-violet/30 bg-brand-violet/10 text-brand-violet' 
                   : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 shadow-sm'
@@ -198,8 +200,8 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, onDownload }
           {item.status === 'success' && (
             <button
               onClick={() => onDownload(item)}
-              className="p-2 bg-brand-emerald/10 hover:bg-brand-emerald/20 text-brand-emerald border border-brand-emerald/20 rounded-xl transition-all duration-200 shadow-sm"
-              title="Download JPEG"
+              className="p-2 bg-brand-emerald/10 hover:bg-brand-emerald/20 text-brand-emerald border border-brand-emerald/20 rounded-xl transition-all duration-200 shadow-sm cursor-pointer"
+              title={`Download Converted ${formatLabel}`}
             >
               <Download className="w-4 h-4" />
             </button>
@@ -208,7 +210,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, onDownload }
           <button
             onClick={() => onRemove(item.id)}
             disabled={item.status === 'processing'}
-            className="p-2 border border-slate-200 hover:border-rose-200 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all duration-200 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-2 border border-slate-200 hover:border-rose-200 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all duration-200 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             title="Remove from list"
           >
             <Trash2 className="w-4 h-4" />
