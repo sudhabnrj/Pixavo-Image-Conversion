@@ -1,363 +1,291 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface Hero3DGalleryProps {
   onSelectTool?: (toolId: string) => void;
 }
 
 export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({ onSelectTool }) => {
+  const [offset, setOffset] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const startXRef = useRef<number>(0);
+  const startOffsetRef = useRef<number>(0);
+
+  // Slow continuous motion
+  useEffect(() => {
+    if (isDragging) return;
+    const interval = setInterval(() => {
+      setOffset((prev) => (prev + 0.015) % 8);
+    }, 30);
+    return () => clearInterval(interval);
+  }, [isDragging]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    startXRef.current = e.clientX;
+    startOffsetRef.current = offset;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const deltaX = e.clientX - startXRef.current;
+    setOffset(startOffsetRef.current - deltaX * 0.005);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // 8 Cards matching the exact screenshot
+  const cards = [
+    // 0: Studio Taupe
+    {
+      id: 'taupe',
+      toolId: 'raw-jpg',
+      type: 'taupe',
+    },
+    // 1: HELIOS
+    {
+      id: 'helios',
+      toolId: 'heic-jpg',
+      type: 'helios',
+    },
+    // 2: MONICA VINADER
+    {
+      id: 'monica',
+      toolId: 'png-jpg',
+      type: 'monica',
+    },
+    // 3: Wedding Aisle
+    {
+      id: 'wedding',
+      toolId: 'raw-png',
+      type: 'wedding',
+    },
+    // 4: G loopscale (Electric Blue)
+    {
+      id: 'loopscale',
+      toolId: 'jpg-webp',
+      type: 'loopscale',
+    },
+    // 5: Larsen Sotelo
+    {
+      id: 'larsen',
+      toolId: 'webp-png',
+      type: 'larsen',
+    },
+    // 6: A-K-R-I-S-
+    {
+      id: 'akris',
+      toolId: 'png-webp',
+      type: 'akris',
+    },
+    // 7: Sands of Time
+    {
+      id: 'sands',
+      toolId: 'png-raw',
+      type: 'sands',
+    },
+  ];
+
   return (
-    <section className="relative w-full overflow-hidden bg-white pt-24 pb-16">
-      {/* 3D Perspective Panoramic Cards Arch */}
-      <div className="relative w-full max-w-[1440px] mx-auto h-[440px] sm:h-[490px] flex items-center justify-center overflow-hidden px-4">
+    <section className="relative w-full overflow-hidden bg-[#faf8f5] pt-24 pb-16 select-none">
+      {/* Background Soft Glow */}
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-radial from-amber-100/40 via-blue-50/30 to-transparent blur-3xl pointer-events-none" />
+
+      {/* 3D Panoramic Gallery Arch Container */}
+      <div
+        className="relative w-full max-w-[1700px] mx-auto h-[460px] sm:h-[500px] flex items-center justify-center cursor-grab active:cursor-grabbing overflow-hidden px-2"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         <div
-          className="relative w-full flex items-center justify-center gap-3 sm:gap-4 md:gap-5"
-          style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+          className="relative w-full flex items-center justify-center"
+          style={{ perspective: '1300px', transformStyle: 'preserve-3d' }}
         >
-          {/* Card 1: Larsen Sotelo (Far Left) */}
-          <div
-            onClick={() => onSelectTool && onSelectTool('raw-jpg')}
-            className="w-[180px] sm:w-[210px] md:w-[225px] h-[360px] sm:h-[410px] bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-300/40 overflow-hidden flex flex-col justify-between shrink-0 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-slate-400/50"
-            style={{
-              transform: 'rotateY(24deg) translateZ(-50px) scale(0.92)',
-              transformOrigin: 'right center',
-            }}
-          >
-            <div className="relative h-[120px] w-full bg-black overflow-hidden flex items-center justify-center p-3">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80"
-                alt="Larsen Sotelo"
-                className="absolute inset-0 w-full h-full object-cover opacity-70"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-              <h3 className="relative z-10 text-white font-bold text-base tracking-tight text-center drop-shadow-md">
-                Larsen Sotelo
-              </h3>
-            </div>
-            <div className="flex-1 p-2 bg-white flex flex-col justify-center">
-              <div className="grid grid-cols-2 gap-1.5">
-                <img
-                  src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[65px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[65px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[65px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[65px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[65px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[65px] object-cover rounded-lg"
-                />
-              </div>
-            </div>
-          </div>
+          <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5">
+            {cards.map((card, idx) => {
+              // Position relative to active center
+              const pos = (idx - offset + 800) % 8;
+              const centerIndex = 3.5;
+              const dist = pos - centerIndex;
 
-          {/* Card 2: A-K-R-I-S- (Left) */}
-          <div
-            onClick={() => onSelectTool && onSelectTool('heic-jpg')}
-            className="w-[180px] sm:w-[210px] md:w-[225px] h-[360px] sm:h-[410px] bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-300/40 overflow-hidden flex flex-col justify-between shrink-0 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-slate-400/50"
-            style={{
-              transform: 'rotateY(15deg) translateZ(-20px) scale(0.96)',
-              transformOrigin: 'right center',
-            }}
-          >
-            <div className="h-[60px] w-full bg-white flex items-center justify-center border-b border-slate-100 px-2">
-              <h3 className="text-slate-900 font-extrabold text-sm sm:text-base tracking-[0.25em] uppercase">
-                A-K-R-I-S-
-              </h3>
-            </div>
-            <div className="flex-1 p-2 bg-white flex flex-col justify-center">
-              <div className="grid grid-cols-3 gap-1">
-                <img
-                  src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[85px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[85px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[85px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[85px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[85px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[85px] object-cover rounded-md"
-                />
-              </div>
-            </div>
-          </div>
+              const rotateY = -dist * 9.5; // Smooth arc curve
+              const translateZ = -Math.pow(Math.abs(dist), 1.8) * 12;
+              const scale = 1 - Math.abs(dist) * 0.035;
+              const opacity = 1 - Math.pow(Math.abs(dist) / 4.5, 2) * 0.4;
 
-          {/* Card 3: Sands of Time (Inner Left) */}
-          <div
-            onClick={() => onSelectTool && onSelectTool('png-jpg')}
-            className="w-[180px] sm:w-[210px] md:w-[225px] h-[360px] sm:h-[410px] bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-300/40 overflow-hidden flex flex-col justify-between shrink-0 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-slate-400/50"
-            style={{
-              transform: 'rotateY(7deg) translateZ(0px) scale(0.99)',
-              transformOrigin: 'right center',
-            }}
-          >
-            <div className="relative h-[110px] w-full bg-[#4a3e35] overflow-hidden flex items-center justify-center p-3">
-              <img
-                src="https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=500&q=80"
-                alt="Sands of Time"
-                className="absolute inset-0 w-full h-full object-cover opacity-70"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-amber-950/70 to-transparent" />
-              <h3 className="relative z-10 text-amber-100 font-serif italic text-sm sm:text-base tracking-wide text-center drop-shadow-md">
-                Sands of Time
-              </h3>
-            </div>
-            <div className="flex-1 p-2 bg-white flex flex-col justify-center">
-              <div className="grid grid-cols-3 gap-1">
-                <img
-                  src="https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1471922694854-ff24a5691694?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-              </div>
-            </div>
-          </div>
+              return (
+                <div
+                  key={card.id}
+                  onClick={() => onSelectTool && onSelectTool(card.toolId)}
+                  style={{
+                    transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px) scale(${scale})`,
+                    opacity: Math.max(0.4, opacity),
+                    zIndex: 10 - Math.round(Math.abs(dist)),
+                    transformOrigin: dist < 0 ? 'right center' : 'left center',
+                  }}
+                  className="shrink-0 w-[190px] sm:w-[215px] md:w-[235px] h-[370px] sm:h-[420px] bg-white rounded-[26px] border border-black/[0.08] shadow-2xl shadow-slate-950/10 overflow-hidden flex flex-col justify-between cursor-pointer transition-transform duration-300 hover:scale-[1.04]"
+                >
+                  {/* CARD TYPE RENDERING MATCHING SCREENSHOT */}
 
-          {/* Card 4: HELLO DOTA (Center) */}
-          <div
-            onClick={() => onSelectTool && onSelectTool('webp-png')}
-            className="w-[180px] sm:w-[210px] md:w-[225px] h-[360px] sm:h-[410px] bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-blue-500/20 overflow-hidden flex flex-col justify-between shrink-0 z-20 cursor-pointer transition-all duration-300 hover:scale-105"
-            style={{
-              transform: 'rotateY(0deg) translateZ(35px) scale(1.03)',
-            }}
-          >
-            <div className="relative h-[95px] w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 overflow-hidden flex items-center justify-center p-3">
-              <img
-                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80"
-                alt="HELLO DOTA"
-                className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay"
-              />
-              <h3 className="relative z-10 text-white font-black text-sm sm:text-base tracking-wider uppercase drop-shadow-md">
-                HELLO DOTA
-              </h3>
-            </div>
-            <div className="flex-1 p-2 bg-white flex flex-col gap-1.5 justify-center">
-              <img
-                src="https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=350&q=80"
-                alt=""
-                className="w-full h-[115px] object-cover rounded-xl"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=350&q=80"
-                alt=""
-                className="w-full h-[115px] object-cover rounded-xl"
-              />
-            </div>
-          </div>
+                  {/* 1. STUDIO TAUPE */}
+                  {card.type === 'taupe' && (
+                    <div className="h-full flex flex-col justify-between bg-[#f5f2eb] p-3">
+                      <h4 className="text-stone-700 font-serif italic text-xs tracking-widest text-center pt-2">
+                        Studio Taupe
+                      </h4>
+                      <div className="grid grid-cols-2 gap-1.5 my-auto">
+                        <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-20 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-20 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-20 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-20 object-cover rounded-md" />
+                      </div>
+                    </div>
+                  )}
 
-          {/* Card 5: Agostino Cocktails (Inner Right) */}
-          <div
-            onClick={() => onSelectTool && onSelectTool('jpg-webp')}
-            className="w-[180px] sm:w-[210px] md:w-[225px] h-[360px] sm:h-[410px] bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-300/40 overflow-hidden flex flex-col justify-between shrink-0 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-slate-400/50"
-            style={{
-              transform: 'rotateY(-7deg) translateZ(0px) scale(0.99)',
-              transformOrigin: 'left center',
-            }}
-          >
-            <div className="relative h-[110px] w-full bg-slate-900 overflow-hidden flex items-center justify-center p-3">
-              <img
-                src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=500&q=80"
-                alt="Agostino Cocktails"
-                className="absolute inset-0 w-full h-full object-cover opacity-70"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-              <h3 className="relative z-10 text-white font-serif italic text-xs sm:text-sm tracking-wide text-center drop-shadow-md">
-                Agostino Cocktails
-              </h3>
-            </div>
-            <div className="flex-1 p-2 bg-white flex flex-col justify-center">
-              <div className="grid grid-cols-3 gap-1">
-                <img
-                  src="https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1560512823-829485b8bf24?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=200&q=80"
-                  alt=""
-                  className="w-full h-[75px] object-cover rounded-md"
-                />
-              </div>
-            </div>
-          </div>
+                  {/* 2. HELIOS */}
+                  {card.type === 'helios' && (
+                    <div className="h-full flex flex-col justify-between bg-[#faf7f2] p-2.5">
+                      <div className="h-[120px] bg-amber-300/80 rounded-xl flex items-center justify-center p-2">
+                        <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=300&q=80" alt="" className="h-full w-full object-cover rounded-lg" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 my-auto">
+                        <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-14 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1560343090-f0409e92791a?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-14 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-14 object-cover rounded" />
+                      </div>
+                      <div className="h-[80px] bg-amber-100/50 rounded-xl p-1">
+                        <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover rounded-lg" />
+                      </div>
+                    </div>
+                  )}
 
-          {/* Card 6: Japanese Restaurant (Right) */}
-          <div
-            onClick={() => onSelectTool && onSelectTool('raw-png')}
-            className="w-[180px] sm:w-[210px] md:w-[225px] h-[360px] sm:h-[410px] bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-300/40 overflow-hidden flex flex-col justify-between shrink-0 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-slate-400/50"
-            style={{
-              transform: 'rotateY(-15deg) translateZ(-20px) scale(0.96)',
-              transformOrigin: 'left center',
-            }}
-          >
-            <div className="relative h-[110px] w-full bg-stone-900 overflow-hidden flex items-center justify-center p-3">
-              <img
-                src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=500&q=80"
-                alt="Japanese Restaurant"
-                className="absolute inset-0 w-full h-full object-cover opacity-75"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-              <h3 className="relative z-10 text-white font-medium text-xs sm:text-sm tracking-widest uppercase text-center drop-shadow-md">
-                Japanese Restaurant
-              </h3>
-            </div>
-            <div className="flex-1 p-2 bg-white flex flex-col justify-center">
-              <div className="grid grid-cols-2 gap-1.5">
-                <img
-                  src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[105px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[105px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[105px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[105px] object-cover rounded-lg"
-                />
-              </div>
-            </div>
-          </div>
+                  {/* 3. MONICA VINADER */}
+                  {card.type === 'monica' && (
+                    <div className="h-full flex flex-col justify-between bg-white p-2.5">
+                      <div className="relative h-[110px] rounded-xl overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover" />
+                        <span className="absolute inset-0 bg-black/30 flex items-center justify-center text-white font-bold text-xs tracking-widest uppercase">
+                          MONICA VINADER
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 my-1">
+                        <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-14 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-14 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-14 object-cover rounded" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-20 object-cover rounded-lg" />
+                        <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-20 object-cover rounded-lg" />
+                      </div>
+                    </div>
+                  )}
 
-          {/* Card 7: NORMAL (Far Right) */}
-          <div
-            onClick={() => onSelectTool && onSelectTool('png-raw')}
-            className="w-[180px] sm:w-[210px] md:w-[225px] h-[360px] sm:h-[410px] bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-300/40 overflow-hidden flex flex-col justify-between shrink-0 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-slate-400/50"
-            style={{
-              transform: 'rotateY(-24deg) translateZ(-50px) scale(0.92)',
-              transformOrigin: 'left center',
-            }}
-          >
-            <div className="h-[60px] w-full bg-white flex items-center justify-start px-4 pt-2 border-b border-slate-100">
-              <h3 className="text-slate-950 font-black text-2xl tracking-tighter uppercase font-mono">
-                NORMAL
-              </h3>
-            </div>
-            <div className="flex-1 p-2 bg-white flex flex-col justify-center">
-              <div className="grid grid-cols-2 gap-1.5">
-                <img
-                  src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[70px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[70px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1520256862855-398228c41684?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[70px] object-cover rounded-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=250&q=80"
-                  alt=""
-                  className="w-full h-[70px] object-cover rounded-lg"
-                />
-              </div>
-            </div>
+                  {/* 4. WEDDING / AISLE */}
+                  {card.type === 'wedding' && (
+                    <div className="h-full flex flex-col justify-between bg-white p-2.5">
+                      <div className="h-[100px] rounded-xl overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 my-1">
+                        <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-1">
+                        <img src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1544078751-58fee2d8a03b?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 5. G LOOPSCALE (ELECTRIC BLUE) */}
+                  {card.type === 'loopscale' && (
+                    <div className="h-full flex flex-col justify-between bg-[#3545ff] text-white p-3">
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <span className="font-bold text-sm italic">G</span>
+                        <span className="font-bold text-sm tracking-tight">loopscale</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 my-auto">
+                        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1633167606207-d840b5070fc2?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded-md" />
+                        <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded-md" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 6. LARSEN SOTELO */}
+                  {card.type === 'larsen' && (
+                    <div className="h-full flex flex-col justify-between bg-black text-white p-2.5">
+                      <div className="relative h-[110px] rounded-xl overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover opacity-80" />
+                        <span className="absolute inset-0 bg-black/40 flex items-center justify-center text-white font-bold text-xs">
+                          Larsen Sotelo
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 my-1">
+                        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 7. A-K-R-I-S- */}
+                  {card.type === 'akris' && (
+                    <div className="h-full flex flex-col justify-between bg-white p-2.5">
+                      <div className="relative h-[95px] rounded-xl overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover" />
+                        <span className="absolute inset-0 bg-black/25 flex items-center justify-center text-white font-black text-xs tracking-widest uppercase">
+                          A-K-R-I-S-
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 my-1">
+                        <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 8. SANDS OF TIME */}
+                  {card.type === 'sands' && (
+                    <div className="h-full flex flex-col justify-between bg-[#faf7f2] p-2.5">
+                      <div className="relative h-[100px] rounded-xl overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 my-1">
+                        <img src="https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                        <img src="https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-16 object-cover rounded" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Main Title & Subtitle identical to Picflow layout */}
+      {/* Main Title & Subtitle matching the screenshot */}
       <div className="max-w-4xl mx-auto text-center space-y-4 px-4 pt-10">
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-slate-950 tracking-tight leading-[1.08]">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-[#111319] tracking-tight leading-[1.06]">
           Client Galleries for Photographers
         </h1>
 
-        <p className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-slate-500 font-normal leading-relaxed">
+        <p className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-[#5d6e82] font-normal leading-relaxed">
           Create branded galleries and impress clients with a simple link. Let them favorite, comment, and download — all without signing up.
         </p>
       </div>
