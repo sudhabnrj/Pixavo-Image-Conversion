@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import exifr from 'exifr';
 import {
-  Sparkles,
   Layers,
   Gauge,
   WifiOff,
@@ -20,6 +19,7 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { FAQ } from './components/FAQ';
 import { ConverterWorkspace } from './components/ConverterWorkspace';
+import { Hero3DGallery } from './components/Hero3DGallery';
 
 import {
   disposeImageCollection,
@@ -358,94 +358,80 @@ function App() {
         ) : (
           /* Landing / Home Page */
           <>
-            <section
-              id="home"
-              className="scroll-mt-24 px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:px-8 max-w-7xl mx-auto space-y-16"
-            >
-              {/* Hero Section */}
-              <div className="space-y-6 text-center max-w-4xl mx-auto">
-                <div className="inline-flex items-center space-x-2 rounded-full border border-brand-violet/10 bg-brand-violet/5 px-4 py-1.5 text-xs font-bold tracking-wide text-brand-violet shadow-sm">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span>Free & Private Browser Image Converter</span>
-                </div>
-                <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-6xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 bg-clip-text text-transparent">
-                  Convert RAW, HEIC, PNG & WebP Instantly
-                </h1>
-                <p className="mx-auto max-w-2xl text-sm text-slate-500 sm:text-base leading-relaxed">
-                  Choose a conversion tool below to open your dedicated converter. All processing happens 100% locally inside your web browser—your photos never leave your device.
+            {/* Full screen 3D Perspective Rotating Gallery Hero */}
+            <div id="home">
+              <Hero3DGallery onSelectTool={handleSelectTool} />
+            </div>
+
+            {/* Select Image Tool Section */}
+            <section id="select-tools" className="scroll-mt-24 space-y-6 pt-12 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto animate-fadeIn">
+              <div className="text-center space-y-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Conversion Tools Collection</span>
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                  Select Image Tool
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Click any tool to enter its dedicated conversion workspace.
                 </p>
               </div>
 
-              {/* Select Image Tool Section */}
-              <div id="select-tools" className="scroll-mt-24 space-y-6 pt-4 animate-fadeIn">
-                <div className="text-center space-y-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>Conversion Tools Collection</span>
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-                    Select Image Tool
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Click any tool to enter its dedicated conversion workspace.
-                  </p>
-                </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {conversionTools.map((tool) => {
+                  const Icon = tool.icon;
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                  {conversionTools.map((tool) => {
-                    const Icon = tool.icon;
+                  const colorMap = {
+                    violet: { bgClass: 'bg-brand-violet text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-brand-violet/25 hover:shadow-xl' },
+                    emerald: { bgClass: 'bg-brand-emerald text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-brand-emerald/25 hover:shadow-xl' },
+                    rose: { bgClass: 'bg-rose-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-rose-600/25 hover:shadow-xl' },
+                    blue: { bgClass: 'bg-blue-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-blue-600/25 hover:shadow-xl' },
+                    amber: { bgClass: 'bg-amber-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-amber-600/25 hover:shadow-xl' },
+                    indigo: { bgClass: 'bg-indigo-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-indigo-600/25 hover:shadow-xl' },
+                    teal: { bgClass: 'bg-teal-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-teal-600/25 hover:shadow-xl' },
+                    orange: { bgClass: 'bg-orange-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-orange-600/25 hover:shadow-xl' },
+                    cyan: { bgClass: 'bg-cyan-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-cyan-600/25 hover:shadow-xl' },
+                    purple: { bgClass: 'bg-purple-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-purple-600/25 hover:shadow-xl' }
+                  };
 
-                    const colorMap = {
-                      violet: { bgClass: 'bg-brand-violet text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-brand-violet/25 hover:shadow-xl' },
-                      emerald: { bgClass: 'bg-brand-emerald text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-brand-emerald/25 hover:shadow-xl' },
-                      rose: { bgClass: 'bg-rose-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-rose-600/25 hover:shadow-xl' },
-                      blue: { bgClass: 'bg-blue-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-blue-600/25 hover:shadow-xl' },
-                      amber: { bgClass: 'bg-amber-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-amber-600/25 hover:shadow-xl' },
-                      indigo: { bgClass: 'bg-indigo-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-indigo-600/25 hover:shadow-xl' },
-                      teal: { bgClass: 'bg-teal-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-teal-600/25 hover:shadow-xl' },
-                      orange: { bgClass: 'bg-orange-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-orange-600/25 hover:shadow-xl' },
-                      cyan: { bgClass: 'bg-cyan-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-cyan-600/25 hover:shadow-xl' },
-                      purple: { bgClass: 'bg-purple-600 text-white', iconBg: 'bg-white/15 text-white', text: 'text-white', desc: 'text-white/85', shadow: 'hover:shadow-purple-600/25 hover:shadow-xl' }
-                    };
+                  const colors = colorMap[tool.color];
 
-                    const colors = colorMap[tool.color];
-
-                    return (
-                      <button
-                        key={tool.id}
-                        onClick={() => handleSelectTool(tool.id)}
-                        className={`group flex flex-col justify-between p-6 text-left rounded-3xl border border-transparent transition-all duration-300 cursor-pointer min-h-[220px] ${colors.bgClass} ${colors.shadow} hover:-translate-y-1`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className={`p-3 rounded-xl ${colors.iconBg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white tracking-wider">
-                              {tool.from} &rarr; {tool.to}
-                            </span>
+                  return (
+                    <button
+                      key={tool.id}
+                      onClick={() => handleSelectTool(tool.id)}
+                      className={`group flex flex-col justify-between p-6 text-left rounded-3xl border border-transparent transition-all duration-300 cursor-pointer min-h-[220px] ${colors.bgClass} ${colors.shadow} hover:-translate-y-1`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className={`p-3 rounded-xl ${colors.iconBg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                            <Icon className="h-5 w-5" />
                           </div>
-                          <h3 className={`text-lg font-extrabold ${colors.text} mb-2`}>
-                            {tool.title}
-                          </h3>
-                          <p className={`text-xs ${colors.desc} leading-relaxed`}>
-                            {tool.desc}
-                          </p>
+                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/20 text-white tracking-wider">
+                            {tool.from} &rarr; {tool.to}
+                          </span>
                         </div>
+                        <h3 className={`text-lg font-extrabold ${colors.text} mb-2`}>
+                          {tool.title}
+                        </h3>
+                        <p className={`text-xs ${colors.desc} leading-relaxed`}>
+                          {tool.desc}
+                        </p>
+                      </div>
 
-                        <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs font-bold text-white">
-                          <span>Convert Now</span>
-                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                      <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs font-bold text-white">
+                        <span>Convert Now</span>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
             {/* Features Section */}
-            <section id="features" className="scroll-mt-20 border-t border-slate-100 px-4 py-20 sm:px-6 lg:px-8">
+            <section id="features" className="scroll-mt-20 border-t border-slate-100 px-4 py-20 sm:px-6 lg:px-8 max-w-7xl mx-auto">
               <div className="mx-auto max-w-6xl">
                 <div className="section-heading text-center space-y-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-brand-violet">Built for a better workflow</span>
@@ -467,7 +453,7 @@ function App() {
             </section>
 
             {/* Supported RAW Formats Section */}
-            <section id="supported-formats" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8">
+            <section id="supported-formats" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8 max-w-7xl mx-auto">
               <div className="mx-auto max-w-6xl rounded-[2rem] border border-slate-100 bg-white/80 px-6 py-12 sm:px-10 shadow-sm backdrop-blur-md">
                 <div className="section-heading text-center space-y-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-brand-violet">Broad camera compatibility</span>
@@ -509,7 +495,7 @@ function App() {
             </section>
 
             {/* FAQ Section */}
-            <section id="faq" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8">
+            <section id="faq" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8 max-w-7xl mx-auto">
               <div className="mx-auto max-w-6xl">
                 <div className="section-heading text-center space-y-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-brand-violet">Questions, answered</span>
@@ -523,7 +509,7 @@ function App() {
             </section>
 
             {/* Blog Section */}
-            <section id="blog" className="scroll-mt-20 px-4 pb-20 sm:px-6 lg:px-8">
+            <section id="blog" className="scroll-mt-20 px-4 pb-20 sm:px-6 lg:px-8 max-w-7xl mx-auto">
               <div className="mx-auto grid max-w-6xl gap-8 rounded-[2rem] border border-slate-100 bg-gradient-to-br from-white to-slate-50/50 p-8 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center shadow-sm">
                 <div>
                   <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-violet">From the Pixavo blog</span>
@@ -537,7 +523,7 @@ function App() {
             </section>
 
             {/* Contact Section */}
-            <section id="contact" className="scroll-mt-20 px-4 pb-24 sm:px-6 lg:px-8">
+            <section id="contact" className="scroll-mt-20 px-4 pb-24 sm:px-6 lg:px-8 max-w-7xl mx-auto">
               <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-brand-violet/10 bg-brand-violet/5 p-8 text-center sm:p-12 shadow-sm">
                 <Mail className="mx-auto h-6 w-6 text-brand-violet" aria-hidden="true" />
                 <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900">Need help with Pixavo?</h2>
