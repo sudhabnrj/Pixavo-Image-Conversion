@@ -3,35 +3,34 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-export interface GalleryCardItem {
+export interface CylinderCardItem {
   id: string;
   toolId: string;
   title: string;
   subtitle: string;
   badge?: string;
-  theme: 'taupe' | 'helios' | 'monica' | 'wedding' | 'loopscale' | 'larsen' | 'akris' | 'sands';
+  theme: 'taupe' | 'helios' | 'monica' | 'wedding' | 'loopscale' | 'larsen' | 'akris' | 'sands' | 'japanese' | 'normal';
   headerImg?: string;
   gridImgs: string[];
 }
 
 export interface Hero3DGalleryProps {
-  cards?: GalleryCardItem[];
-  radius?: number;
-  spacing?: number;
-  rotationSpeed?: number;
+  cards?: CylinderCardItem[];
+  radius?: number; // Radius of giant 3D cylinder
+  rotationSpeed?: number; // Rotation speed in radians per frame
   autoPlay?: boolean;
   enableMouseParallax?: boolean;
   enableScrollTrigger?: boolean;
   onSelectTool?: (toolId: string) => void;
 }
 
-const defaultCardsData: GalleryCardItem[] = [
+const defaultCylinderCards: CylinderCardItem[] = [
   {
     id: 'taupe',
     toolId: 'raw-jpg',
@@ -156,13 +155,41 @@ const defaultCardsData: GalleryCardItem[] = [
       'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=200&q=80',
     ],
   },
+  {
+    id: 'japanese',
+    toolId: 'raw-png',
+    title: 'Japanese Restaurant',
+    subtitle: 'Architecture RAW to PNG',
+    badge: 'RAW .ARW',
+    theme: 'japanese',
+    headerImg: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=400&q=80',
+    gridImgs: [
+      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=250&q=80',
+      'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=250&q=80',
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=250&q=80',
+      'https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=250&q=80',
+    ],
+  },
+  {
+    id: 'normal',
+    toolId: 'png-raw',
+    title: 'NORMAL Studio',
+    subtitle: 'PNG to Uncompressed DNG',
+    badge: 'PNG to RAW',
+    theme: 'normal',
+    gridImgs: [
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=250&q=80',
+      'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=250&q=80',
+      'https://images.unsplash.com/photo-1520256862855-398228c41684?auto=format&fit=crop&w=250&q=80',
+      'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=250&q=80',
+    ],
+  },
 ];
 
 export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
-  cards = defaultCardsData,
-  radius = 920,
-  spacing = 0.38,
-  rotationSpeed = 0.0003,
+  cards = defaultCylinderCards,
+  radius = 850,
+  rotationSpeed = 0.002, // Radians per frame
   autoPlay = true,
   enableMouseParallax = true,
   enableScrollTrigger = true,
@@ -170,12 +197,12 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
 }) => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rotationRef = useRef<number>(0);
-  const scrollRotationRef = useRef<number>(0);
+  const rotationAngleRef = useRef<number>(0);
+  const scrollOffsetRef = useRef<number>(0);
   const hoveredCardIdRef = useRef<string | null>(null);
   const [, setHoveredCardId] = useState<string | null>(null);
 
-  // Mouse Parallax Lerp State
+  // Mouse Parallax Tilting Lerp State
   const mouseTargetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const mouseCurrentRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -189,6 +216,7 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
       opacity: number;
       blur: number;
       zIndex: number;
+      isVisible: boolean;
     }>
   >([]);
 
@@ -197,7 +225,7 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
     rotateY: 0,
   });
 
-  // Initialize Lenis Smooth Scrolling
+  // Initialize Lenis Smooth Scroll
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
@@ -216,7 +244,7 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
     };
   }, []);
 
-  // Initialize GSAP ScrollTrigger for Hero Scroll Rotation
+  // Initialize GSAP ScrollTrigger
   useEffect(() => {
     if (!enableScrollTrigger || !sectionRef.current) return;
 
@@ -227,7 +255,7 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
         end: 'bottom top',
         scrub: 1.5,
         onUpdate: (self) => {
-          scrollRotationRef.current = self.progress * Math.PI * 0.8;
+          scrollOffsetRef.current = self.progress * Math.PI * 1.2;
         },
       });
     }, sectionRef);
@@ -235,35 +263,37 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
     return () => ctx.revert();
   }, [enableScrollTrigger]);
 
-  // Mouse Movement Parallax Event Handler
+  // Mouse Parallax Interaction
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!enableMouseParallax || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const relativeX = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+    const relativeX = (e.clientX - rect.left) / rect.width - 0.5;
     const relativeY = (e.clientY - rect.top) / rect.height - 0.5;
 
-    // Max tilt: rotateX +- 5 deg, rotateY +- 8 deg
+    // Tilt limits: rotateX +-5deg, rotateY +-8deg
     mouseTargetRef.current = {
-      x: relativeY * 10,  // tilt X based on vertical cursor
-      y: relativeX * 16,  // tilt Y based on horizontal cursor
+      x: relativeY * 10,
+      y: relativeX * 16,
     };
   };
 
   const handleMouseLeave = () => {
     mouseTargetRef.current = { x: 0, y: 0 };
+    hoveredCardIdRef.current = null;
+    setHoveredCardId(null);
   };
 
-  // Main 60fps RequestAnimationFrame Loop
+  // TRUE 3D CYLINDER MATHEMATICAL POSITIONING LOOP (60FPS)
   useEffect(() => {
-    let animationFrameId: number;
+    let animId: number;
 
     const numCards = cards.length;
-    const centerIdx = (numCards - 1) / 2;
+    const angleStep = (Math.PI * 2) / numCards; // 360 degrees divided by N cards
 
     const render = () => {
-      // Auto-rotation (paused when hovering)
+      // Endless rotation around cylinder surface
       if (autoPlay && !hoveredCardIdRef.current) {
-        rotationRef.current += rotationSpeed;
+        rotationAngleRef.current += rotationSpeed;
       }
 
       // Lerp mouse parallax
@@ -275,28 +305,46 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
         rotateY: mouseCurrentRef.current.y,
       });
 
-      const totalRotation = rotationRef.current + scrollRotationRef.current;
+      const currentTotalAngle = rotationAngleRef.current + scrollOffsetRef.current;
 
-      // Compute 3D cylinder positioning math for each card
-      const transforms = cards.map((card, index) => {
-        const cardAngle = (index - centerIdx) * spacing + totalRotation;
+      // Mathematical 3D Positioning:
+      // x = radius * sin(angle)
+      // z = radius * cos(angle) - radius
+      // rotateY = angle (degrees)
+      const transforms = cards.map((card, idx) => {
+        const angle = idx * angleStep + currentTotalAngle;
 
-        let x = Math.sin(cardAngle) * radius;
-        let z = Math.cos(cardAngle) * radius - radius;
-        const rotateYDeg = cardAngle * (180 / Math.PI);
+        // Normalize angle into [-PI, PI] range to evaluate front vs back hemisphere
+        const normalizedAngle = Math.atan2(Math.sin(angle), Math.cos(angle));
 
-        const distance = Math.abs(x);
-        let scale = Math.max(0.68, 1 - Math.pow(distance / (radius * 0.8), 2) * 0.28);
-        let opacity = Math.max(0.35, 1 - Math.pow(distance / (radius * 0.8), 2) * 0.45);
-        const blur = Math.min(6, (distance / radius) * 12);
+        const x = radius * Math.sin(normalizedAngle);
+        let z = radius * Math.cos(normalizedAngle) - radius;
+        const rotateYDeg = normalizedAngle * (180 / Math.PI);
+
+        // Front-facing cards vs side & back cards
+        const cosVal = Math.cos(normalizedAngle);
+        const isFrontFacing = cosVal > -0.2;
+
+        let opacity = 0;
+        let scale = 1;
+        let blur = 0;
+
+        if (isFrontFacing) {
+          // Opacity fades smoothly as card moves toward cylinder sides
+          opacity = Math.max(0, Math.pow(Math.max(0, cosVal), 1.2));
+          scale = Math.max(0.7, 0.75 + cosVal * 0.28);
+          blur = Math.max(0, (1 - cosVal) * 8);
+        }
+
         let zIndex = Math.round(100 + z);
 
-        // Hover Boost handling
+        // Hover Boost
         if (hoveredCardIdRef.current === card.id) {
           z += 70;
           scale *= 1.08;
           opacity = 1;
-          zIndex += 200;
+          blur = 0;
+          zIndex += 300;
         }
 
         return {
@@ -308,26 +356,26 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
           opacity,
           blur,
           zIndex,
+          isVisible: isFrontFacing && opacity > 0.05,
         };
       });
 
       setCardTransforms(transforms);
-      animationFrameId = requestAnimationFrame(render);
+      animId = requestAnimationFrame(render);
     };
 
-    animationFrameId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [cards, radius, spacing, rotationSpeed, autoPlay]);
+    animId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animId);
+  }, [cards, radius, rotationSpeed, autoPlay]);
 
   return (
     <section
       ref={sectionRef}
       className="relative w-full min-h-screen flex flex-col justify-between overflow-hidden bg-white text-slate-900 pt-20 pb-16 select-none"
     >
-      {/* Background Soft Radial Glow & Vignette */}
-      <div className="absolute inset-0 bg-radial from-slate-50 via-white to-slate-100/50 pointer-events-none" />
+      {/* Background Radial Glow & Soft Vignette */}
+      <div className="absolute inset-0 bg-radial from-slate-50 via-white to-slate-100/60 pointer-events-none" />
       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[1100px] h-[450px] bg-gradient-to-tr from-brand-violet/10 via-blue-100/20 to-indigo-100/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute inset-0 bg-radial-vignette opacity-20 pointer-events-none" />
 
       {/* Top Header Badge */}
       <div className="relative z-10 text-center pt-4">
@@ -337,21 +385,21 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
         </span>
       </div>
 
-      {/* 3D Perspective Gallery Viewport */}
+      {/* True 3D Cylinder Viewport */}
       <div
         ref={containerRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="relative w-full h-[460px] sm:h-[520px] my-auto flex items-center justify-center overflow-visible px-4"
+        className="relative w-full h-[470px] sm:h-[530px] my-auto flex items-center justify-center overflow-visible px-4"
         style={{
           perspective: '2000px',
           perspectiveOrigin: '50% 46%',
         }}
       >
-        {/* Gallery Base Shadow Bloom */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[85%] max-w-[1200px] h-12 bg-black/10 rounded-full blur-2xl pointer-events-none" />
+        {/* Soft Base Ambient Bloom under Cylinder */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[85%] max-w-[1200px] h-12 bg-black/10 rounded-full blur-2xl pointer-events-none" />
 
-        {/* 3D Stage Container with Mouse Parallax Tilting */}
+        {/* 3D Cylinder Stage with Parallax Tilt */}
         <div
           className="relative w-full h-full flex items-center justify-center"
           style={{
@@ -363,7 +411,7 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
         >
           {cards.map((card) => {
             const transformState = cardTransforms.find((t) => t.id === card.id);
-            if (!transformState) return null;
+            if (!transformState || !transformState.isVisible) return null;
 
             return (
               <motion.div
@@ -388,10 +436,10 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
                   transition: 'transform 0.15s ease-out, filter 0.2s ease, opacity 0.2s ease',
                 }}
               >
-                {/* Edge Reflection Glassmorphism Highlight */}
+                {/* Edge Glassmorphism Reflection Highlight */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-white/60 pointer-events-none z-30" />
 
-                {/* CARD THEMES MATCHING EXACT SCREENSHOT */}
+                {/* CARD THEMES ATTACHED TO CYLINDER SURFACE */}
 
                 {/* 1. STUDIO TAUPE */}
                 {card.theme === 'taupe' && (
@@ -433,11 +481,6 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
                     <div className="grid grid-cols-3 gap-1 my-1">
                       {card.gridImgs.slice(0, 3).map((img, i) => (
                         <img key={i} src={img} alt="" className="w-full h-14 object-cover rounded" loading="lazy" />
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {card.gridImgs.slice(3, 5).map((img, i) => (
-                        <img key={i} src={img} alt="" className="w-full h-20 object-cover rounded-lg" loading="lazy" />
                       ))}
                     </div>
                   </div>
@@ -519,13 +562,46 @@ export const Hero3DGallery: React.FC<Hero3DGalleryProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* 9. JAPANESE RESTAURANT */}
+                {card.theme === 'japanese' && (
+                  <div className="h-full flex flex-col justify-between bg-[#18181b] text-white p-2.5">
+                    <div className="relative h-[100px] rounded-xl overflow-hidden">
+                      {card.headerImg && <img src={card.headerImg} alt="" className="w-full h-full object-cover opacity-80" />}
+                      <span className="absolute inset-0 bg-black/40 flex items-center justify-center text-white font-bold text-xs tracking-widest uppercase">
+                        Japanese Restaurant
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 my-1">
+                      {card.gridImgs.map((img, i) => (
+                        <img key={i} src={img} alt="" className="w-full h-16 object-cover rounded" loading="lazy" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 10. NORMAL STUDIO */}
+                {card.theme === 'normal' && (
+                  <div className="h-full flex flex-col justify-between bg-white p-2.5">
+                    <div className="h-[60px] w-full bg-white flex items-center justify-start px-2 pt-2 border-b border-slate-100">
+                      <h3 className="text-slate-950 font-black text-xl tracking-tighter uppercase font-mono">
+                        NORMAL
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 my-auto">
+                      {card.gridImgs.map((img, i) => (
+                        <img key={i} src={img} alt="" className="w-full h-20 object-cover rounded-lg" loading="lazy" />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             );
           })}
         </div>
       </div>
 
-      {/* Main Title & Subtitle matching Picflow Hero layout */}
+      {/* Main Title & Subtitle matching Picflow Hero */}
       <div className="relative z-10 max-w-4xl mx-auto text-center space-y-5 px-4 pt-6">
         <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-[#111319] tracking-tight leading-[1.06]">
           Client Galleries for Photographers
